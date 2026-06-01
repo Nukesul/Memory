@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import yadaPhoto from "./photo/yada.jpg";
+import aun from "./photo/aun.jpg";
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const CLASS_DATA = {
@@ -23,8 +25,8 @@ const PHOTO_SETS = [
   ["https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1515023115689-589c33041d3c?w=400&h=711&fit=crop&crop=top"],
   ["https://images.unsplash.com/photo-1529505534180-8d9b1430b21c?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?w=400&h=711&fit=crop&crop=top"],
   // Vietnam
-  ["https://images.unsplash.com/photo-1552058544-f2b08422138a?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400&h=711&fit=crop&crop=top"],
-  ["https://images.unsplash.com/photo-1463453091185-61582044d556?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=711&fit=crop&crop=top"],
+  [aun, aun],
+  [aun, aun],
   // Sri Lanka
   ["https://images.unsplash.com/photo-1546961342-ea5f62d51c85?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=400&h=711&fit=crop&crop=top"],
   ["https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=400&h=711&fit=crop&crop=top"],
@@ -39,7 +41,7 @@ const PHOTO_SETS = [
   ["https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=711&fit=crop&crop=top"],
   ["https://images.unsplash.com/photo-1548544149-4835e62ee5b3?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=711&fit=crop&crop=top"],
   // Myanmar
-  ["https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1503185912284-5271ff81b9a8?w=400&h=711&fit=crop&crop=top"],
+  [yadaPhoto, yadaPhoto],
   // Extra slot for 20th if needed
   ["https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=400&h=711&fit=crop&crop=top", "https://images.unsplash.com/photo-1523006535-31aee3e7a2a3?w=400&h=711&fit=crop&crop=top"],
 ];
