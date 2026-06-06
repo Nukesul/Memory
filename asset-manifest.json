@@ -1,14 +1,33 @@
 {
   "files": {
     "main.css": "/Memory/static/css/main.31d6cfe0.css",
-    "main.js": "/Memory/static/js/main.b59b67f6.js",
+    "main.js": "/Memory/static/js/main.bfc57fa2.js",
+    "static/media/ochi.jpg": "/Memory/static/media/ochi.3308b2933feb13743907.jpg",
+    "static/media/ruku.jpg": "/Memory/static/media/ruku.2a6b83254b0893871481.jpg",
+    "static/media/baiel1.jpg": "/Memory/static/media/baiel1.aa8de80992ba24ca00b8.jpg",
+    "static/media/baiel.jpg": "/Memory/static/media/baiel.e2d86c0815bb89eb29be.jpg",
+    "static/media/nabi.jpg": "/Memory/static/media/nabi.7f7ad0593240f7727c1d.jpg",
+    "static/media/otogo1.jpg": "/Memory/static/media/otogo1.7ff0cce50c0793afbaf8.jpg",
+    "static/media/suman1.jpg": "/Memory/static/media/suman1.fc8f2b756c94289744a9.jpg",
+    "static/media/mada.jpg": "/Memory/static/media/mada.41d1f0c0c7dd62ac0e05.jpg",
+    "static/media/ko1.jpg": "/Memory/static/media/ko1.ff3cea1a1d6e9283c742.jpg",
+    "static/media/mada1.jpg": "/Memory/static/media/mada1.467c9ac84833cb5e43e0.jpg",
+    "static/media/ko.jpg": "/Memory/static/media/ko.a7ec3113e1c2115025fa.jpg",
+    "static/media/chacha.jpg": "/Memory/static/media/chacha.828fccfd2c896c362233.jpg",
+    "static/media/unda.jpg": "/Memory/static/media/unda.2e54150b89f5c85ba1d8.jpg",
+    "static/media/anjeri1.jpg": "/Memory/static/media/anjeri1.0ba8def0fcd565f8be3c.jpg",
     "static/media/aun.jpg": "/Memory/static/media/aun.b2375deccf35e34ffd34.jpg",
+    "static/media/anjeri.jpg": "/Memory/static/media/anjeri.288038ff79ab0553584f.jpg",
+    "static/media/otogo.jpg": "/Memory/static/media/otogo.68541cd013d341b0a9dc.jpg",
+    "static/media/suman.jpg": "/Memory/static/media/suman.db45b6de16057ae627bf.jpg",
+    "static/media/yada2.jpg": "/Memory/static/media/yada2.c1aafa449e6b7e00ae36.jpg",
+    "static/media/unda1.jpg": "/Memory/static/media/unda1.9bc072aef30b3b7f660e.jpg",
     "static/media/yada.jpg": "/Memory/static/media/yada.29e58f28cc9de01e4e8c.jpg",
     "index.html": "/Memory/index.html",
-    "main.b59b67f6.js.map": "/Memory/static/js/main.b59b67f6.js.map"
+    "main.bfc57fa2.js.map": "/Memory/static/js/main.bfc57fa2.js.map"
   },
   "entrypoints": [
     "static/css/main.31d6cfe0.css",
-    "static/js/main.b59b67f6.js"
+    "static/js/main.bfc57fa2.js"
   ]
 }
