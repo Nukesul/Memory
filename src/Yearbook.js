@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import yadaPhoto  from "./photo/yada.jpg";
 import yadaPhoto2 from "./photo/yada2.jpg";
 import ochi       from "./photo/ochi.jpg";
@@ -17,7 +17,6 @@ import unda1      from "./photo/unda1.jpg";
 import ko         from "./photo/ko.jpg";
 import ko1        from "./photo/ko1.jpg";
 import anjeri     from "./photo/anjeri.jpg";
-import React      from "react";
 import mada       from "./photo/mada.jpg";
 import mada1      from "./photo/mada1.jpg";
 import nabi       from "./photo/nabi.jpg";
@@ -77,7 +76,7 @@ const STUDENTS = [
   { id:17, name:"Beruguti Namsrai",    country:"Mongolia",  flag:"🇲🇳",initials:"BN",color:"#f2f0b0",dream:"Music producer blending Mongolian throat singing with J-pop",              quote:"Дуу хоолой — сэтгэлийн хэл. — Voice is the language of the soul.",                 memory:"Performing a live throat singing duet with the school's traditional music club.",         emoji:"🎶",role:"Music Soul",        photoSet:PHOTO_SETS[16] },
   { id:18, name:"Otogo Chimeddorj",    country:"Mongolia",  flag:"🇲🇳",initials:"OC",color:"#a0f2b4",dream:"Diplomat fostering Mongolia-Japan cultural exchanges",                     quote:"Нэгдсэн нь хүчтэй. — United we are strong.",                                        memory:"Organizing the class's end-of-year talent show from scratch in three days.",              emoji:"🎪",role:"Chief Organizer",   photoSet:PHOTO_SETS[17] },
   { id:19, name:"Yadana Kyaw",         country:"Myanmar",   flag:"🇲🇲",initials:"YK",color:"#f2c8a0",dream:"Journalist bringing Myanmar stories to a Japanese-speaking world",         quote:"ကြိုးစားမှ အောင်မြင်မည်။ — Effort brings success.",                                  memory:"Reading her own Burmese poetry translated into Japanese at the school festival.",         emoji:"📜",role:"Class Poet",        photoSet:PHOTO_SETS[18] },
-  { id:20, name:"Suman",              country:"Nepal",      flag:"🇳🇵",initials:"SU",color:"#a0d4f2",dream:"Chef opening a Thai-Japanese fusion restaurant in Kyoto",                 quote:"ทำดีได้ดี — Do good, receive good.",                                                 memory:"Cooking pad thai for 25 people in the dorm kitchen on New Year's Eve.",                   emoji:"🍜",role:"Class Chef",        photoSet:PHOTO_SETS[19] },
+  { id:20, name:"Suman",               country:"Nepal",     flag:"🇳🇵",initials:"SU",color:"#a0d4f2",dream:"Chef opening a Thai-Japanese fusion restaurant in Kyoto",                 quote:"ทำดีได้ดี — Do good, receive good.",                                                 memory:"Cooking pad thai for 25 people in the dorm kitchen on New Year's Eve.",                   emoji:"🍜",role:"Class Chef",        photoSet:PHOTO_SETS[19] },
 ];
 
 const FUNNY_QUOTES = [
@@ -146,6 +145,8 @@ const STATS = [
   { label:"Memories",  value:"∞",   emoji:"🌸", color:"#f2a0c4" },
 ];
 
+const GRADUATION = new Date("2025-03-20T09:00:00+09:00");
+
 // ─── GLOBAL CSS ────────────────────────────────────────────────────────────────
 
 const GLOBAL_CSS = `
@@ -202,12 +203,20 @@ const GLOBAL_CSS = `
   @keyframes imgReveal { from{opacity:0;transform:scale(1.03)} to{opacity:1;transform:scale(1)} }
   @keyframes btnPop    { 0%{transform:scale(1)} 40%{transform:scale(0.93)} 100%{transform:scale(1)} }
 
+  /* Reduce motion for users who prefer it — also helps perf on low-end devices */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.1ms !important;
+    }
+  }
+
   input:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
   button { font-family: 'DM Sans', -apple-system, sans-serif; cursor: pointer; }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   section { scroll-margin-top: calc(var(--nav-h) + 8px); }
 
-  /* ── Reveal animation ── */
   .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.62s cubic-bezier(0.22,1,0.36,1), transform 0.62s cubic-bezier(0.22,1,0.36,1); }
   .reveal.visible { opacity: 1; transform: translateY(0); }
 
@@ -236,99 +245,105 @@ const GLOBAL_CSS = `
   }
   .s-card:active { transform: scale(0.97); }
 
-  /* ── Photo inside card ── adapts to natural image ratio ── */
-  .s-photo-wrap {
-    position: relative;
-    overflow: hidden;
-  }
+  .s-photo-wrap { position: relative; overflow: hidden; }
   .s-photo {
-    display: block;
-    width: 100%;
-    height: auto;
+    display: block; width: 100%; height: auto;
     transition: transform 0.52s cubic-bezier(0.22,1,0.36,1);
     transform-origin: center top;
   }
   .s-photo.loaded { animation: imgReveal 0.45s ease; }
 
-  /* Photo placeholder (shown while image loads) */
   .s-photo-placeholder {
-    min-height: 200px;
-    background-size: 200% 100%;
+    min-height: 200px; background-size: 200% 100%;
     animation: shimmer 1.8s linear infinite;
-    position: absolute;
-    inset: 0;
-    transition: opacity 0.4s ease;
+    position: absolute; inset: 0; transition: opacity 0.4s ease;
   }
 
-  /* Overlays always sit on top of the photo */
   .s-overlay-gradient {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 68%;
+    position: absolute; bottom: 0; left: 0; right: 0; height: 68%;
     background: linear-gradient(to top, rgba(5,2,0,0.92) 0%, rgba(5,2,0,0.36) 52%, transparent 100%);
     pointer-events: none;
   }
-  .s-overlay-top { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2; display: flex; justify-content: space-between; align-items: flex-start; }
+  .s-overlay-top {
+    position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
   .s-overlay-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 0.85rem 0.85rem 0.8rem; z-index: 2; }
 
+  /* Photo toggle button — always visible on touch devices */
   .s-toggle {
     opacity: 0;
     transition: opacity 0.22s ease, transform 0.22s ease;
     background: rgba(255,255,255,0.92) !important;
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: none !important;
     border-radius: 50%;
-    width: 30px; height: 30px;
+    width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px;
+    font-size: 13px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.14);
     flex-shrink: 0;
   }
   .s-toggle:hover { transform: scale(1.1); }
+  .s-toggle:active { transform: scale(0.92); }
+
+  /* Arrow nav buttons for photo switching */
+  .s-photo-nav {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    z-index: 3;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: none;
+    border-radius: 50%;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #444;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    transition: background 0.18s ease, transform 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+  }
+  .s-photo-nav:active { transform: translateY(-50%) scale(0.88); }
+  .s-photo-nav.prev { left: 8px; }
+  .s-photo-nav.next { right: 8px; }
+  /* Hide on desktop (hover-capable devices) — use toggle button instead */
+  @media (hover: hover) { .s-photo-nav { display: none; } }
+  /* Always show on touch */
+  @media (hover: none)  { .s-photo-nav { opacity: 0.9; } }
+
   .s-cta {
-    opacity: 0;
-    transform: translateY(4px);
+    opacity: 0; transform: translateY(4px);
     transition: opacity 0.28s ease, transform 0.28s ease;
-    font-size: 10.5px;
-    color: rgba(255,255,255,0.78);
-    letter-spacing: 0.5px;
-    font-weight: 600;
+    font-size: 10.5px; color: rgba(255,255,255,0.78);
+    letter-spacing: 0.5px; font-weight: 600;
   }
+  @media (hover: none) { .s-cta { opacity: 0.8; transform: none; } }
 
-  /* ── Masonry grid for student cards ── */
-  .masonry-grid {
-    columns: 3 190px;
-    column-gap: 14px;
-  }
-  .masonry-item {
-    break-inside: avoid;
-    margin-bottom: 14px;
-    display: inline-block;
-    width: 100%;
-    vertical-align: top;
-  }
+  /* ── Masonry grid ── */
+  .masonry-grid { columns: 3 190px; column-gap: 14px; }
+  .masonry-item { break-inside: avoid; margin-bottom: 14px; display: inline-block; width: 100%; vertical-align: top; }
 
-  /* ── Search ── */
+  /* ── Search input ── */
   .search-input {
     width: 100%; max-width: 440px;
     padding: 13px 22px; border-radius: 50px;
     border: 1.5px solid rgba(200,185,168,0.45);
     background: rgba(255,255,255,0.9);
     font-size: 14px; font-family: 'DM Sans', sans-serif;
-    color: var(--text);
-    box-shadow: var(--shadow-sm);
-    transition: all 0.25s ease;
-    appearance: none;
+    color: var(--text); box-shadow: var(--shadow-sm);
+    transition: all 0.25s ease; appearance: none;
   }
   .search-input:focus {
     border-color: rgba(196,119,90,0.5);
     box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-sm);
-    background: #fff;
-    outline: none;
+    background: #fff; outline: none;
   }
   .search-input::placeholder { color: var(--text-muted); }
 
-  /* ── Nav (desktop) ── */
+  /* ── Nav pills ── */
   .nav-pill {
     background: transparent; border: none; border-radius: 50px;
     padding: 7px 16px; font-size: 13.5px; font-weight: 500;
@@ -340,69 +355,62 @@ const GLOBAL_CSS = `
 
   /* ── Bottom nav (mobile) ── */
   .bottom-nav {
-    display: none;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 72px;
+    display: none; position: fixed;
+    bottom: 0; left: 0; right: 0; height: 72px;
     background: rgba(252,250,247,0.97);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
     border-top: 1px solid rgba(210,195,175,0.3);
-    z-index: 200;
-    padding: 0 4px;
+    z-index: 200; padding: 0 4px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -4px 24px rgba(80,50,30,0.08);
   }
   .bottom-nav-inner { display: flex; align-items: center; justify-content: space-around; height: 100%; }
   .bottom-nav-btn {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; padding: 6px 12px; border: none; background: transparent;
-    border-radius: 14px; min-width: 52px; transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
+    gap: 3px; padding: 8px 14px; border: none; background: transparent;
+    border-radius: 14px; min-width: 54px; min-height: 54px;
+    transition: all 0.2s ease; -webkit-tap-highlight-color: transparent;
   }
-  .bottom-nav-btn .bn-icon  { font-size: 21px; line-height: 1; transition: transform 0.2s ease; }
+  .bottom-nav-btn .bn-icon  { font-size: 22px; line-height: 1; transition: transform 0.2s ease; }
   .bottom-nav-btn .bn-label { font-size: 9.5px; font-weight: 600; letter-spacing: 0.3px; color: #b8a898; transition: color 0.2s; }
   .bottom-nav-btn.active .bn-icon  { transform: translateY(-2px); }
   .bottom-nav-btn.active .bn-label { color: var(--accent); }
   .bottom-nav-btn.active { background: rgba(196,119,90,0.08); }
 
-  /* ── Scroll-to-top button ── */
+  /* ── Scroll-to-top ── */
   .scroll-top-btn {
-    position: fixed;
-    right: 20px;
+    position: fixed; right: 20px;
     bottom: calc(var(--bottom-nav-h) + 20px);
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(255,255,255,0.94);
-    backdrop-filter: blur(16px);
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,255,255,0.94); backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(210,195,175,0.4);
     display: flex; align-items: center; justify-content: center;
-    font-size: 17px;
-    box-shadow: 0 4px 20px rgba(80,50,30,0.14);
+    font-size: 18px; box-shadow: 0 4px 20px rgba(80,50,30,0.14);
     transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease, opacity 0.3s ease;
-    z-index: 90;
-    cursor: pointer;
-    color: var(--text-soft);
+    z-index: 90; cursor: pointer; color: var(--text-soft);
   }
   .scroll-top-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(80,50,30,0.2); }
 
-  /* ── Modal ── */
   .modal-details::-webkit-scrollbar { width: 4px; }
   .modal-details::-webkit-scrollbar-thumb { background: rgba(180,140,110,0.22); border-radius: 3px; }
 
-  /* ── Photo dots (when 2 photos) ── */
+  /* ── Photo dots ── */
   .photo-dot {
-    width: 6px; height: 6px; border-radius: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
     background: rgba(255,255,255,0.4);
-    transition: all 0.25s ease;
-    cursor: pointer;
+    transition: all 0.25s ease; cursor: pointer;
   }
-  .photo-dot.active { background: #fff; width: 18px; border-radius: 4px; }
+  .photo-dot.active { background: #fff; width: 20px; border-radius: 4px; }
+
+  /* ── Swipe hint (modal on mobile) ── */
+  .modal-swipe-hint {
+    font-size: 11px; color: rgba(180,160,140,0.7); text-align: center;
+    padding: 6px 0 0; letter-spacing: 0.5px;
+  }
 
   /* ── Responsive ── */
-  @media (max-width: 900px) {
-    .masonry-grid { columns: 2 180px; }
-  }
+  @media (max-width: 900px) { .masonry-grid { columns: 2 180px; } }
 
   @media (max-width: 640px) {
     .bottom-nav { display: flex; flex-direction: column; justify-content: flex-end; }
@@ -419,10 +427,13 @@ const GLOBAL_CSS = `
     .hero-pad { padding-top: 76px !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important; }
     .hero-avatars { display: none !important; }
     .hero-sub-text { font-size: 12.5px !important; }
+    /* Disable heavy backdrop-filter on older mobile browsers to prevent jank */
+    .s-card .s-toggle { backdrop-filter: none; -webkit-backdrop-filter: none; }
   }
 
+  /* Force toggle + arrows visible on touch screens */
   @media (hover: none) {
-    .s-toggle { opacity: 0.75 !important; }
+    .s-toggle { opacity: 0.85 !important; }
     .s-cta    { opacity: 0.8  !important; transform: none !important; }
   }
 `;
@@ -434,7 +445,12 @@ function useReveal(ref, delay = 0) {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add("visible"); obs.disconnect(); } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("visible");
+          obs.disconnect();
+        }
+      },
       { threshold: 0.06 }
     );
     if (delay) el.style.transitionDelay = `${delay}s`;
@@ -447,12 +463,18 @@ function useThrottledCallback(fn, ms) {
   const lastRef = useRef(0);
   return useCallback((...args) => {
     const now = Date.now();
-    if (now - lastRef.current >= ms) { lastRef.current = now; fn(...args); }
-  }, [fn, ms]);
+    if (now - lastRef.current >= ms) {
+      lastRef.current = now;
+      fn(...args);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ms]);
 }
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 640);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth <= 640
+  );
   useEffect(() => {
     const fn = () => setIsMobile(window.innerWidth <= 640);
     window.addEventListener("resize", fn, { passive: true });
@@ -461,19 +483,50 @@ function useIsMobile() {
   return isMobile;
 }
 
-// ─── LAZY IMAGE (for avatar / modal) ──────────────────────────────────────────
+// Touch swipe hook — returns ref to attach to an element
+function useSwipe(onSwipeLeft, onSwipeRight) {
+  const startX = useRef(null);
+  const startY = useRef(null);
+
+  const onTouchStart = useCallback((e) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+  }, []);
+
+  const onTouchEnd = useCallback((e) => {
+    if (startX.current === null) return;
+    const dx = e.changedTouches[0].clientX - startX.current;
+    const dy = e.changedTouches[0].clientY - startY.current;
+    // Only count as horizontal swipe if horizontal delta dominates
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      if (dx < 0) onSwipeLeft?.();
+      else onSwipeRight?.();
+    }
+    startX.current = null;
+    startY.current = null;
+  }, [onSwipeLeft, onSwipeRight]);
+
+  return { onTouchStart, onTouchEnd };
+}
+
+// ─── LAZY IMAGE ────────────────────────────────────────────────────────────────
 
 function LazyImage({ src, alt, style, className = "", onError, objectPosition = "top center" }) {
-  const imgRef  = useRef(null);
+  const containerRef = useRef(null);
   const [loaded,  setLoaded]  = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!src) return;
-    const el = imgRef.current;
+    const el = containerRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
       { rootMargin: "200px 0px", threshold: 0 }
     );
     obs.observe(el);
@@ -481,7 +534,7 @@ function LazyImage({ src, alt, style, className = "", onError, objectPosition = 
   }, [src]);
 
   return (
-    <div ref={imgRef} style={{ ...style, position: "relative", overflow: "hidden" }}>
+    <div ref={containerRef} style={{ ...style, position: "relative", overflow: "hidden" }}>
       {!loaded && (
         <div style={{
           position: "absolute", inset: 0,
@@ -494,7 +547,7 @@ function LazyImage({ src, alt, style, className = "", onError, objectPosition = 
         <img
           src={src}
           alt={alt}
-          className={`${loaded ? "" : "opacity-0"} ${className}`}
+          className={className}
           onLoad={() => setLoaded(true)}
           onError={onError}
           style={{
@@ -513,6 +566,7 @@ function LazyImage({ src, alt, style, className = "", onError, objectPosition = 
 
 // ─── DECORATIVE ────────────────────────────────────────────────────────────────
 
+// Only render petals on non-mobile (performance)
 const PETALS = Array.from({ length: 12 }, (_, i) => ({
   left:     `${(i * 8.5) % 96}%`,
   size:     `${12 + (i * 2.5) % 10}px`,
@@ -549,48 +603,65 @@ function FloatingOrb({ style }) {
   );
 }
 
-// ─── AVATAR ────────────────────────────────────────────────────────────────────
+// ─── PHOTO AVATAR ──────────────────────────────────────────────────────────────
 
-function PhotoAvatar({ student, size = 80 }) {
+const Avatar = React.memo(function Avatar({ student, size = 80 }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const border = Math.max(2, size * 0.035);
-  const shadow = `0 ${size*0.06}px ${size*0.35}px ${student.color}60, 0 2px 10px rgba(0,0,0,0.1)`;
+  const shadow = `0 ${size * 0.06}px ${size * 0.35}px ${student.color}60, 0 2px 10px rgba(0,0,0,0.1)`;
   const bp     = `${border}px solid rgba(255,255,255,0.92)`;
+  const hasTwoPhotos = student.photoSet && student.photoSet[0] !== student.photoSet[1];
+
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    if (hasTwoPhotos) setPhotoIdx(i => (i + 1) % 2);
+  }, [hasTwoPhotos]);
 
   if (student.photoSet) {
     return (
       <div
-        onClick={(e) => { e.stopPropagation(); setPhotoIdx(i => (i + 1) % 2); }}
-        style={{ width:size, height:size, borderRadius:"50%", overflow:"hidden", flexShrink:0, border:bp, boxShadow:shadow, cursor:"pointer", position:"relative" }}
+        onClick={handleClick}
+        style={{
+          width:size, height:size, borderRadius:"50%", overflow:"hidden",
+          flexShrink:0, border:bp, boxShadow:shadow,
+          cursor: hasTwoPhotos ? "pointer" : "default",
+          position:"relative",
+        }}
       >
-        <LazyImage src={student.photoSet[photoIdx]} alt={student.name} style={{ width:"100%", height:"100%", position:"static" }} objectPosition="top center" />
+        <LazyImage
+          src={student.photoSet[photoIdx]}
+          alt={student.name}
+          style={{ width:"100%", height:"100%", position:"static" }}
+          objectPosition="top center"
+        />
       </div>
     );
   }
 
   return (
-    <div style={{
-      width:size, height:size, borderRadius:"50%", flexShrink:0,
-      background:`radial-gradient(135deg, ${student.color} 0%, ${student.color}bb 100%)`,
-      display:"flex", alignItems:"center", justifyContent:"center",
-      fontSize:size*0.28, fontWeight:700, color:"rgba(60,40,30,0.65)",
-      fontFamily:"'Cormorant Garamond', Georgia, serif", letterSpacing:1,
-      border:bp, boxShadow:shadow, position:"relative",
-    }} aria-label={student.name}>
+    <div
+      aria-label={student.name}
+      style={{
+        width:size, height:size, borderRadius:"50%", flexShrink:0,
+        background:`radial-gradient(135deg, ${student.color} 0%, ${student.color}bb 100%)`,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontSize:size * 0.28, fontWeight:700, color:"rgba(60,40,30,0.65)",
+        fontFamily:"'Cormorant Garamond', Georgia, serif", letterSpacing:1,
+        border:bp, boxShadow:shadow, position:"relative",
+      }}
+    >
       {student.initials}
-      <div style={{ position:"absolute", bottom:size*0.02, right:size*0.02, fontSize:size*0.22, lineHeight:1 }} aria-hidden="true">
+      <div
+        aria-hidden="true"
+        style={{ position:"absolute", bottom:size * 0.02, right:size * 0.02, fontSize:size * 0.22, lineHeight:1 }}
+      >
         {student.flag}
       </div>
     </div>
   );
-}
-
-const Avatar = React.memo(function Avatar({ student, size = 80 }) {
-  return <PhotoAvatar student={student} size={size} />;
 });
 
-// ─── STUDENT CARD — natural photo ratio ────────────────────────────────────────
-// Card adapts to whatever aspect ratio the photo is (9:16, 4:5, square, etc.)
+// ─── STUDENT CARD ──────────────────────────────────────────────────────────────
 
 const StudentCard = React.memo(function StudentCard({ student, onClick }) {
   const [photoIdx,  setPhotoIdx]  = useState(0);
@@ -598,51 +669,62 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
   const revealRef = useRef(null);
   useReveal(revealRef);
 
-  const currentPhoto = student.photoSet ? student.photoSet[photoIdx] : null;
-  const hasSecond    = student.photoSet && student.photoSet[0] !== student.photoSet[1];
+  const currentPhoto = student.photoSet?.[photoIdx] ?? null;
+  const hasSecond    = !!(student.photoSet && student.photoSet[0] !== student.photoSet[1]);
+
+  const handleCardClick  = useCallback(() => onClick(student), [onClick, student]);
+  const handleKeyDown    = useCallback((e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(student); }
+  }, [onClick, student]);
 
   const switchPhoto = useCallback((e) => {
     e.stopPropagation();
-    if (!student.photoSet) return;
+    if (!hasSecond) return;
     setImgLoaded(false);
     setPhotoIdx(i => (i + 1) % 2);
-  }, [student.photoSet]);
+  }, [hasSecond]);
+
+  const goToPrev = useCallback((e) => {
+    e.stopPropagation();
+    if (!hasSecond) return;
+    setImgLoaded(false);
+    setPhotoIdx(i => (i - 1 + 2) % 2);
+  }, [hasSecond]);
+
+  const setDotPhoto = useCallback((e, i) => {
+    e.stopPropagation();
+    setImgLoaded(false);
+    setPhotoIdx(i);
+  }, []);
 
   return (
     <div
       ref={revealRef}
       className="reveal s-card"
-      onClick={() => onClick(student)}
-      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(student); } }}
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
       aria-label={`View ${student.name}'s profile`}
     >
-      {/* ── Photo area: height is determined by the actual image ratio ── */}
       <div
         className="s-photo-wrap"
         style={{
           background: `linear-gradient(155deg, ${student.color}dd 0%, ${student.color}77 100%)`,
-          minHeight: imgLoaded ? 0 : 220, // placeholder height while loading
+          minHeight: imgLoaded ? 0 : 220,
         }}
       >
-        {currentPhoto && (
+        {currentPhoto ? (
           <img
-            key={currentPhoto}            /* remount when src changes → triggers animation */
+            key={currentPhoto}
             src={currentPhoto}
             alt={student.name}
             loading="lazy"
             className={`s-photo${imgLoaded ? " loaded" : ""}`}
             onLoad={() => setImgLoaded(true)}
-            style={{
-              opacity:    imgLoaded ? 1 : 0,
-              transition: "opacity 0.42s ease",
-            }}
+            style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.42s ease" }}
           />
-        )}
-
-        {/* No photo → initials fallback */}
-        {!currentPhoto && (
+        ) : (
           <div style={{
             position:"absolute", inset:0,
             display:"flex", flexDirection:"column",
@@ -655,12 +737,25 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
           </div>
         )}
 
-        {/* Dark gradient — sits over the photo, bottom-up */}
         <div className="s-overlay-gradient" aria-hidden="true" />
 
-        {/* ── Top row: country badge + switch button ── */}
+        {/* Arrow navigation buttons — visible on mobile (touch) */}
+        {hasSecond && (
+          <>
+            <button
+              className="s-photo-nav prev"
+              onClick={goToPrev}
+              aria-label="Previous photo"
+            >‹</button>
+            <button
+              className="s-photo-nav next"
+              onClick={switchPhoto}
+              aria-label="Next photo"
+            >›</button>
+          </>
+        )}
+
         <div className="s-overlay-top">
-          {/* Country badge */}
           <div style={{
             background:"rgba(255,255,255,0.93)", backdropFilter:"blur(12px)",
             borderRadius:50, padding:"3px 10px",
@@ -671,22 +766,20 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
             <span style={{ fontSize:9, color:"#555", letterSpacing:0.3, fontWeight:700 }}>{student.country}</span>
           </div>
 
-          {/* Switch-photo button */}
+          {/* Desktop toggle button (hover) */}
           {hasSecond && (
             <button onClick={switchPhoto} aria-label="Switch photo" className="s-toggle">📸</button>
           )}
         </div>
 
-        {/* ── Bottom row: name + role + photo dots ── */}
         <div className="s-overlay-bottom">
-          {/* Photo dots indicator */}
           {hasSecond && (
             <div style={{ display:"flex", gap:5, marginBottom:7 }}>
-              {[0,1].map(i => (
+              {[0, 1].map(i => (
                 <div
                   key={i}
                   className={`photo-dot${photoIdx === i ? " active" : ""}`}
-                  onClick={(e) => { e.stopPropagation(); setImgLoaded(false); setPhotoIdx(i); }}
+                  onClick={(e) => setDotPhoto(e, i)}
                 />
               ))}
             </div>
@@ -721,14 +814,17 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
 // ─── STUDENT MODAL ─────────────────────────────────────────────────────────────
 
 function StudentModal({ student, onClose, onNext, onPrev }) {
-  const [photoIdx,     setPhotoIdx]     = useState(0);
+  const [photoIdx,      setPhotoIdx]      = useState(0);
   const [transitioning, setTransitioning] = useState(false);
-  const [imgLoaded,    setImgLoaded]    = useState(false);
+  const [imgLoaded,     setImgLoaded]     = useState(false);
   const isMobile = useIsMobile();
 
-  useEffect(() => { setPhotoIdx(0); setTransitioning(false); setImgLoaded(false); }, [student.id]);
+  useEffect(() => {
+    setPhotoIdx(0);
+    setTransitioning(false);
+    setImgLoaded(false);
+  }, [student.id]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handle = (e) => {
       if (e.key === "Escape")     onClose();
@@ -739,22 +835,44 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
     return () => window.removeEventListener("keydown", handle);
   }, [onClose, onNext, onPrev]);
 
-  // Lock body scroll
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, []);
 
+  const hasSecondPhoto = !!(student.photoSet && student.photoSet[0] !== student.photoSet[1]);
+
   const switchPhoto = useCallback(() => {
-    if (!student.photoSet || student.photoSet[0] === student.photoSet[1]) return;
+    if (!hasSecondPhoto) return;
     setTransitioning(true);
     setImgLoaded(false);
-    setTimeout(() => { setPhotoIdx(i => (i + 1) % 2); setTransitioning(false); }, 200);
-  }, [student.photoSet]);
+    setTimeout(() => {
+      setPhotoIdx(i => (i + 1) % 2);
+      setTransitioning(false);
+    }, 200);
+  }, [hasSecondPhoto]);
 
-  const currentPhoto   = student.photoSet ? student.photoSet[photoIdx] : null;
-  const hasSecondPhoto = student.photoSet && student.photoSet[0] !== student.photoSet[1];
+  const prevPhoto = useCallback(() => {
+    if (!hasSecondPhoto) return;
+    setTransitioning(true);
+    setImgLoaded(false);
+    setTimeout(() => {
+      setPhotoIdx(i => (i - 1 + 2) % 2);
+      setTransitioning(false);
+    }, 200);
+  }, [hasSecondPhoto]);
+
+  const setDotPhoto = useCallback((e, i) => {
+    e.stopPropagation();
+    setImgLoaded(false);
+    setPhotoIdx(i);
+  }, []);
+
+  // Swipe left = next student, swipe right = prev student (on details panel)
+  const swipeHandlers = useSwipe(onNext, onPrev);
+
+  const currentPhoto = student.photoSet?.[photoIdx] ?? null;
 
   return (
     <div
@@ -781,15 +899,13 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
           boxShadow:`0 48px 120px rgba(0,0,0,0.28), 0 0 0 1.5px ${student.color}44`,
           width:"100%", maxWidth:740,
           animation:"scaleIn 0.3s cubic-bezier(0.22,1,0.36,1)",
-          position:"relative",
-          overflow:"hidden",
+          position:"relative", overflow:"hidden",
           maxHeight: isMobile ? "96vh" : "92vh",
           display:"grid",
           gridTemplateColumns: isMobile ? "1fr" : "260px 1fr",
         }}
       >
-
-        {/* ── Photo column: adapts to image natural ratio ── */}
+        {/* ── Photo column ── */}
         <div style={{
           position:"relative",
           background:`linear-gradient(155deg, ${student.color}cc, ${student.color}55)`,
@@ -827,14 +943,12 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             </div>
           )}
 
-          {/* Bottom gradient on photo */}
           <div aria-hidden="true" style={{
             position:"absolute", bottom:0, left:0, right:0, height:"30%",
             background:`linear-gradient(to top, ${student.color}88 0%, transparent 100%)`,
             pointerEvents:"none",
           }} />
 
-          {/* Country chip */}
           <div style={{
             position:"absolute", top:14, left:14,
             background:"rgba(255,255,255,0.93)", backdropFilter:"blur(12px)",
@@ -846,19 +960,52 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             <span style={{ fontSize:11, color:"#555", fontWeight:700, letterSpacing:0.3 }}>{student.country}</span>
           </div>
 
-          {/* Photo dots / switch */}
+          {/* Photo nav arrows in modal */}
+          {hasSecondPhoto && (
+            <>
+              <button
+                onClick={prevPhoto}
+                aria-label="Previous photo"
+                style={{
+                  position:"absolute", bottom:44, left:10,
+                  background:"rgba(255,255,255,0.88)", backdropFilter:"blur(8px)",
+                  border:"none", borderRadius:"50%",
+                  width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:16, color:"#444", boxShadow:"0 2px 10px rgba(0,0,0,0.15)",
+                  cursor:"pointer", zIndex:3, transition:"transform 0.18s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+              >‹</button>
+              <button
+                onClick={switchPhoto}
+                aria-label="Next photo"
+                style={{
+                  position:"absolute", bottom:44, right:10,
+                  background:"rgba(255,255,255,0.88)", backdropFilter:"blur(8px)",
+                  border:"none", borderRadius:"50%",
+                  width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:16, color:"#444", boxShadow:"0 2px 10px rgba(0,0,0,0.15)",
+                  cursor:"pointer", zIndex:3, transition:"transform 0.18s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+              >›</button>
+            </>
+          )}
+
           {hasSecondPhoto && (
             <div style={{
               position:"absolute", bottom:14, left:"50%", transform:"translateX(-50%)",
-              display:"flex", gap:6, cursor:"pointer",
+              display:"flex", gap:6,
               background:"rgba(0,0,0,0.28)", backdropFilter:"blur(6px)",
               borderRadius:20, padding:"6px 11px",
             }}>
-              {[0,1].map(i => (
+              {[0, 1].map(i => (
                 <div
                   key={i}
                   className={`photo-dot${photoIdx === i ? " active" : ""}`}
-                  onClick={(e) => { e.stopPropagation(); setImgLoaded(false); setPhotoIdx(i); }}
+                  onClick={(e) => setDotPhoto(e, i)}
                 />
               ))}
             </div>
@@ -868,26 +1015,25 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
         {/* ── Details column ── */}
         <div
           className="modal-details"
-          style={{ padding: isMobile ? "1.5rem 1.3rem 1.5rem" : "2rem 2rem 2rem 1.75rem", overflowY:"auto", position:"relative" }}
+          style={{ padding: isMobile ? "1.5rem 1.3rem" : "2rem 2rem 2rem 1.75rem", overflowY:"auto", position:"relative" }}
+          {...swipeHandlers}
         >
-          {/* Close button */}
           <button
             onClick={onClose}
             aria-label="Close"
             style={{
               position:"absolute", top:14, right:14,
               background:"rgba(0,0,0,0.05)", border:"none",
-              borderRadius:"50%", width:36, height:36,
+              borderRadius:"50%", width:40, height:40,
               display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:20, color:"#999", zIndex:10,
+              fontSize:22, color:"#999", zIndex:10,
               transition:"background 0.2s",
             }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.1)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,0.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,0.05)"; }}
           >×</button>
 
-          {/* Role chip + name */}
-          <div style={{ marginBottom:"1.4rem", paddingRight:44 }}>
+          <div style={{ marginBottom:"1.4rem", paddingRight:50 }}>
             <div style={{
               display:"inline-flex", alignItems:"center", gap:6,
               background:`${student.color}20`,
@@ -904,7 +1050,6 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             }}>{student.name}</h2>
           </div>
 
-          {/* Dream */}
           <div style={{ marginBottom:"1.2rem" }}>
             <div style={{ fontSize:9.5, textTransform:"uppercase", letterSpacing:2.5, color:"#c8b8a8", marginBottom:7, fontWeight:700 }}>Dream</div>
             <p style={{
@@ -915,7 +1060,6 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             }}>{student.dream}</p>
           </div>
 
-          {/* Quote */}
           <blockquote style={{
             borderLeft:`3px solid ${student.color}`,
             background:`${student.color}0e`,
@@ -927,7 +1071,6 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             <p style={{ fontSize:13.5, fontStyle:"italic", color:"#4a4040", lineHeight:1.8 }}>{student.quote}</p>
           </blockquote>
 
-          {/* Memory */}
           <div style={{ marginBottom:"1.4rem" }}>
             <div style={{ fontSize:9.5, textTransform:"uppercase", letterSpacing:2.5, color:"#c8b8a8", marginBottom:7, fontWeight:700 }}>Memory from Japan</div>
             <div style={{
@@ -941,7 +1084,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             </div>
           </div>
 
-          {/* Navigation prev / next */}
+          {/* Prev / Next navigation */}
           <div style={{
             display:"flex", justifyContent:"space-between",
             borderTop:"1px solid rgba(220,210,200,0.4)", paddingTop:"1rem",
@@ -952,17 +1095,21 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
                 key={label}
                 onClick={handler}
                 style={{
-                  flex:1,
-                  background:"rgba(0,0,0,0.04)", border:"1px solid rgba(200,185,170,0.4)",
-                  borderRadius:50, padding:"9px 22px",
-                  fontSize:12.5, color:"#888", fontWeight:600,
-                  transition:"all 0.2s",
+                  flex:1, background:"rgba(0,0,0,0.04)",
+                  border:"1px solid rgba(200,185,170,0.4)",
+                  borderRadius:50, padding:"11px 22px",
+                  fontSize:13, color:"#888", fontWeight:600,
+                  transition:"all 0.2s", minHeight:44,
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#444"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; e.currentTarget.style.color = "#888"; }}
               >{label}</button>
             ))}
           </div>
+
+          {isMobile && (
+            <p className="modal-swipe-hint">← swipe to navigate students →</p>
+          )}
         </div>
       </div>
     </div>
@@ -973,24 +1120,25 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
 
 function WorldSection({ students, onSelectCountry, selectedCountry }) {
   const countryGroups = useMemo(() => {
-    const g = {};
-    students.forEach(s => { if (!g[s.country]) g[s.country] = []; g[s.country].push(s); });
-    return g;
+    return students.reduce((acc, s) => {
+      if (!acc[s.country]) acc[s.country] = [];
+      acc[s.country].push(s);
+      return acc;
+    }, {});
   }, [students]);
+
   const countries = useMemo(() => Object.keys(countryGroups), [countryGroups]);
 
   return (
     <div>
-      {/* Stats */}
       <div className="stats-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:"3rem" }}>
         {STATS.map((s, i) => (
-          <div key={i} style={{
-            background:"rgba(255,255,255,0.82)",
-            backdropFilter:"blur(16px)",
+          <div key={s.label} style={{
+            background:"rgba(255,255,255,0.82)", backdropFilter:"blur(16px)",
             border:"1px solid rgba(255,255,255,0.9)",
             borderRadius:22, padding:"1.5rem 1rem",
             textAlign:"center", boxShadow:"var(--shadow-sm)",
-            animation:`fadeInUp 0.5s ease ${i*0.1}s both`,
+            animation:`fadeInUp 0.5s ease ${i * 0.1}s both`,
             position:"relative", overflow:"hidden",
           }}>
             <div aria-hidden="true" style={{ position:"absolute", top:-18, right:-18, width:80, height:80, borderRadius:"50%", background:s.color, opacity:0.2, filter:"blur(14px)", pointerEvents:"none" }} />
@@ -1001,7 +1149,6 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
         ))}
       </div>
 
-      {/* Country filter */}
       <div style={{ marginBottom:"2.5rem" }}>
         <p style={{ fontSize:13, color:"#c0b0a0", marginBottom:14, textAlign:"center" }}>
           {selectedCountry
@@ -1010,7 +1157,7 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
         </p>
         <div role="group" aria-label="Filter by country" style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
           {countries.map(country => {
-            const s = countryGroups[country];
+            const group = countryGroups[country];
             const isSel = selectedCountry === country;
             return (
               <button
@@ -1021,8 +1168,8 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
                   background:  isSel ? "rgba(196,119,90,0.14)" : "rgba(255,255,255,0.82)",
                   backdropFilter:"blur(10px)",
                   border:      isSel ? "1.5px solid rgba(196,119,90,0.5)" : "1px solid rgba(210,195,180,0.45)",
-                  borderRadius:50, padding:"8px 16px",
-                  display:"flex", alignItems:"center", gap:7,
+                  borderRadius:50, padding:"9px 16px",
+                  display:"flex", alignItems:"center", gap:7, minHeight:42,
                   fontSize:13, color: isSel ? "var(--accent)" : "var(--text-soft)",
                   fontWeight:  isSel ? 700 : 500,
                   transition:"all 0.25s cubic-bezier(0.22,1,0.36,1)",
@@ -1030,13 +1177,13 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
                   boxShadow:   isSel ? "0 6px 22px rgba(196,119,90,0.2)" : "var(--shadow-sm)",
                 }}
               >
-                <span style={{ fontSize:16 }}>{s[0].flag}</span>
+                <span style={{ fontSize:16 }}>{group[0].flag}</span>
                 {country}
                 <span style={{
                   background: isSel ? "rgba(196,119,90,0.18)" : "rgba(200,185,170,0.3)",
                   borderRadius:50, padding:"2px 7px", fontSize:10.5,
                   color: isSel ? "var(--accent)" : "#999", fontWeight:700,
-                }}>{s.length}</span>
+                }}>{group.length}</span>
               </button>
             );
           })}
@@ -1045,7 +1192,7 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
               onClick={() => onSelectCountry(null)}
               style={{
                 background:"transparent", border:"1px dashed rgba(200,185,170,0.5)",
-                borderRadius:50, padding:"8px 16px",
+                borderRadius:50, padding:"9px 16px", minHeight:42,
                 fontSize:12.5, color:"#c0b0a0", fontWeight:500, transition:"all 0.2s",
               }}
             >× Show everyone</button>
@@ -1074,8 +1221,16 @@ const GalleryItem = React.memo(function GalleryItem({ item, index }) {
         border:"1px solid rgba(200,190,180,0.22)",
         zIndex:1, position:"relative",
       }}
-      onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1) rotate(0deg) translateY(-6px)"; e.currentTarget.style.boxShadow = "0 28px 56px rgba(0,0,0,0.18)"; e.currentTarget.style.zIndex = "10"; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = `rotate(${item.rotate}deg)`; e.currentTarget.style.boxShadow = "0 4px 18px rgba(0,0,0,0.1)"; e.currentTarget.style.zIndex = "1"; }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = "scale(1.1) rotate(0deg) translateY(-6px)";
+        e.currentTarget.style.boxShadow = "0 28px 56px rgba(0,0,0,0.18)";
+        e.currentTarget.style.zIndex = "10";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = `rotate(${item.rotate}deg)`;
+        e.currentTarget.style.boxShadow = "0 4px 18px rgba(0,0,0,0.1)";
+        e.currentTarget.style.zIndex = "1";
+      }}
     >
       <div style={{ width:"100%", paddingBottom:"90%", position:"relative", borderRadius:3, background:item.bg, overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -1128,16 +1283,20 @@ function AnonymousMessages() {
     const text = draft.trim();
     if (!text) return;
     const color = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
-    setMessages(m => [...m, { id:Date.now(), text, color }]);
+    setMessages(m => [...m, { id: Date.now(), text, color }]);
     setDraft("");
   }, [draft]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "Enter") add();
+  }, [add]);
 
   return (
     <section aria-label="Anonymous friendship notes">
       <div style={{ display:"grid", gap:10, marginBottom:"1.4rem" }}>
         {messages.map((m, i) => (
           <div key={m.id} style={{
-            background:m.color, borderRadius:16, padding:"1rem 1.25rem",
+            background: m.color, borderRadius:16, padding:"1rem 1.25rem",
             fontSize:14, color:"#4a3a30", lineHeight:1.8,
             border:"1px solid rgba(255,255,255,0.85)",
             animation: i === messages.length - 1 ? "slideIn 0.4s ease" : "none",
@@ -1149,14 +1308,14 @@ function AnonymousMessages() {
         <input
           value={draft}
           onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && add()}
+          onKeyDown={handleKeyDown}
           placeholder="Leave an anonymous note for a classmate…"
           aria-label="Anonymous note"
           maxLength={280}
           className="search-input"
           style={{ flex:1, borderRadius:50 }}
-          onFocus={e  => e.target.style.borderColor = "rgba(196,119,90,0.5)"}
-          onBlur={e   => e.target.style.borderColor = "rgba(200,185,168,0.45)"}
+          onFocus={e  => { e.target.style.borderColor = "rgba(196,119,90,0.5)"; }}
+          onBlur={e   => { e.target.style.borderColor = "rgba(200,185,168,0.45)"; }}
         />
         <button
           onClick={add}
@@ -1166,7 +1325,7 @@ function AnonymousMessages() {
             color:"white", border:"none", borderRadius:50,
             padding:"13px 24px", fontSize:13.5, fontWeight:700,
             boxShadow:"0 4px 16px rgba(196,119,90,0.35)",
-            transition:"all 0.22s ease", flexShrink:0,
+            transition:"all 0.22s ease", flexShrink:0, minHeight:44,
           }}
           onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 7px 24px rgba(196,119,90,0.45)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(196,119,90,0.35)"; }}
@@ -1182,10 +1341,14 @@ function TimeCapsule() {
   const [revealed, setRevealed] = useState(false);
   const [opening,  setOpening]  = useState(false);
 
-  const open = () => {
+  const open = useCallback(() => {
+    if (opening) return;
     setOpening(true);
-    setTimeout(() => { setRevealed(true); setOpening(false); }, 550);
-  };
+    setTimeout(() => {
+      setRevealed(true);
+      setOpening(false);
+    }, 550);
+  }, [opening]);
 
   return (
     <div style={{ textAlign:"center" }}>
@@ -1207,11 +1370,13 @@ function TimeCapsule() {
           </p>
           <button
             onClick={open}
+            disabled={opening}
             style={{
               background:"linear-gradient(135deg, #c4775a, #a85a3a)",
               color:"white", border:"none", borderRadius:50,
               padding:"14px 36px", fontSize:14.5, fontWeight:700,
               boxShadow:"0 10px 28px rgba(196,119,90,0.38)", transition:"all 0.25s ease",
+              minHeight:48,
             }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 14px 36px rgba(196,119,90,0.46)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(196,119,90,0.38)"; }}
@@ -1230,7 +1395,7 @@ function TimeCapsule() {
                 fontSize:    isLast ? 16.5 : 14.5, color:"#3a2e28", lineHeight:1.9,
                 fontStyle:   isLast ? "italic" : "normal",
                 fontFamily:  isLast ? "'Cormorant Garamond', Georgia, serif" : "inherit",
-                animation:  `fadeInUp 0.5s ease ${i*0.18}s both`,
+                animation:  `fadeInUp 0.5s ease ${i * 0.18}s both`,
               }}>
                 {isLast && <span aria-hidden="true" style={{ marginRight:8 }}>🌸</span>}
                 {msg}
@@ -1244,6 +1409,7 @@ function TimeCapsule() {
                 background:"transparent", color:"#c0b0a0",
                 border:"1px solid rgba(200,185,168,0.4)", borderRadius:50,
                 padding:"9px 24px", fontSize:13, fontWeight:500, transition:"all 0.2s",
+                minHeight:44,
               }}
             >Seal again ✦</button>
           </div>
@@ -1256,29 +1422,32 @@ function TimeCapsule() {
 // ─── RANDOM MEMORY ─────────────────────────────────────────────────────────────
 
 function RandomMemoryButton({ students }) {
-  const [memory,  setMemory]  = useState(null);
+  const [memory,   setMemory]   = useState(null);
   const [spinning, setSpinning] = useState(false);
 
   const pick = useCallback(() => {
+    if (spinning) return;
     setSpinning(true);
     setMemory(null);
     setTimeout(() => {
-      const all = students.map(s => ({ student:s, memory:s.memory, emoji:s.emoji }));
-      setMemory(all[Math.floor(Math.random() * all.length)]);
+      const idx = Math.floor(Math.random() * students.length);
+      const s   = students[idx];
+      setMemory({ student: s, memory: s.memory, emoji: s.emoji });
       setSpinning(false);
     }, 400);
-  }, [students]);
+  }, [spinning, students]);
 
   return (
     <div style={{ textAlign:"center" }}>
       <button
         onClick={pick}
+        disabled={spinning}
         aria-label="Surface a random class memory"
         style={{
           background:"rgba(255,255,255,0.88)", backdropFilter:"blur(10px)",
           border:"1.5px solid rgba(180,155,130,0.45)", borderRadius:50,
           padding:"15px 36px", fontSize:15, color:"#4a3a30", fontWeight:600,
-          display:"inline-flex", alignItems:"center", gap:12,
+          display:"inline-flex", alignItems:"center", gap:12, minHeight:50,
           boxShadow:"var(--shadow-sm)", transition:"all 0.3s cubic-bezier(0.22,1,0.36,1)",
         }}
         onMouseEnter={e => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.background = "#fff"; }}
@@ -1314,42 +1483,51 @@ function RandomMemoryButton({ students }) {
 
 // ─── COUNTDOWN ─────────────────────────────────────────────────────────────────
 
-const GRADUATION = new Date("2025-03-20T09:00:00+09:00");
+function computeCountdown() {
+  const diff = GRADUATION - Date.now();
+  if (diff <= 0) {
+    return { days: Math.floor(Math.abs(diff) / 86400000), hours: 0, mins: 0, secs: 0, past: true };
+  }
+  return {
+    days:  Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
+    mins:  Math.floor((diff % 3600000) / 60000),
+    secs:  Math.floor((diff % 60000) / 1000),
+    past:  false,
+  };
+}
 
 function Countdown() {
-  const [time, setTime] = useState({ days:0, hours:0, mins:0, secs:0, past:false });
-
+  const [time, setTime] = useState(computeCountdown);
   useEffect(() => {
-    const tick = () => {
-      const diff = GRADUATION - Date.now();
-      if (diff <= 0) {
-        setTime({ days:Math.floor(Math.abs(diff)/86400000), hours:0, mins:0, secs:0, past:true });
-        return;
-      }
-      setTime({ days:Math.floor(diff/86400000), hours:Math.floor((diff%86400000)/3600000), mins:Math.floor((diff%3600000)/60000), secs:Math.floor((diff%60000)/1000), past:false });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
+    const id = setInterval(() => setTime(computeCountdown()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  if (time.past) return (
-    <div style={{ textAlign:"center" }}>
-      <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:20, fontStyle:"italic", color:"#9a8070" }}>
-        Graduated {time.days} days ago 🌸
-      </p>
-      <p style={{ fontSize:13, color:"#c0b0a0", marginTop:6 }}>The memories remain forever.</p>
-    </div>
-  );
+  if (time.past) {
+    return (
+      <div style={{ textAlign:"center" }}>
+        <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:20, fontStyle:"italic", color:"#9a8070" }}>
+          Graduated {time.days} days ago 🌸
+        </p>
+        <p style={{ fontSize:13, color:"#c0b0a0", marginTop:6 }}>The memories remain forever.</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div style={{ fontSize:10, letterSpacing:3.5, color:"#c4a882", textTransform:"uppercase", textAlign:"center", marginBottom:16, fontWeight:700 }}>Until graduation</div>
       <div style={{ display:"flex", gap:16, justifyContent:"center" }}>
-        {[{label:"Days",val:time.days},{label:"Hours",val:time.hours},{label:"Mins",val:time.mins},{label:"Secs",val:time.secs}].map(p => (
+        {[
+          { label:"Days",  val: time.days  },
+          { label:"Hours", val: time.hours },
+          { label:"Mins",  val: time.mins  },
+          { label:"Secs",  val: time.secs  },
+        ].map(p => (
           <div key={p.label} style={{ textAlign:"center" }}>
             <div style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:42, fontWeight:700, color:"#1e1410", lineHeight:1, minWidth:52 }}>
-              {String(p.val).padStart(2,"0")}
+              {String(p.val).padStart(2, "0")}
             </div>
             <div style={{ fontSize:9.5, letterSpacing:2.5, color:"#c0b0a0", textTransform:"uppercase", marginTop:4, fontWeight:700 }}>{p.label}</div>
           </div>
@@ -1377,12 +1555,19 @@ function SectionHeading({ tag, title, sub }) {
 
 function LoadingScreen({ progress, msg }) {
   return (
-    <div role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label="Loading yearbook" style={{
-      minHeight:"100vh", display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center",
-      background:"linear-gradient(145deg, #faf7f2 0%, #f5efe4 50%, #ede4f0 100%)",
-      padding:"2rem",
-    }}>
+    <div
+      role="progressbar"
+      aria-valuenow={Math.round(progress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Loading yearbook"
+      style={{
+        minHeight:"100vh", display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center",
+        background:"linear-gradient(145deg, #faf7f2 0%, #f5efe4 50%, #ede4f0 100%)",
+        padding:"2rem",
+      }}
+    >
       <style>{GLOBAL_CSS}</style>
       <div aria-hidden="true" style={{ fontSize:44, marginBottom:20, animation:"float 2.2s ease-in-out infinite", display:"inline-block" }}>🌸</div>
       <div style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#3a2e28", marginBottom:6, textAlign:"center", fontWeight:700 }}>
@@ -1435,8 +1620,7 @@ function ScrollToTop({ visible }) {
     <button
       className="scroll-top-btn"
       aria-label="Scroll to top"
-      onClick={() => window.scrollTo({ top:0, behavior:"smooth" })}
-      style={{ opacity: visible ? 1 : 0 }}
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
     >↑</button>
   );
 }
@@ -1453,67 +1637,78 @@ export default function Yearbook() {
   const [navScrolled,     setNavScrolled]     = useState(false);
   const [showScrollTop,   setShowScrollTop]   = useState(false);
   const [searchQuery,     setSearchQuery]     = useState("");
+  const isMobile = useIsMobile();
+
   const sectionsRef = useRef({});
 
-  // Loading progress
   useEffect(() => {
     let prog = 0;
     const timer = setInterval(() => {
       prog = Math.min(prog + 2.5, 100);
       setLoadProgress(prog);
       setLoadMsg(LOAD_MSGS[Math.min(Math.floor(prog / 25), LOAD_MSGS.length - 1)]);
-      if (prog >= 100) { clearInterval(timer); setTimeout(() => setLoading(false), 380); }
+      if (prog >= 100) {
+        clearInterval(timer);
+        setTimeout(() => setLoading(false), 380);
+      }
     }, 22);
     return () => clearInterval(timer);
   }, []);
 
-  // Scroll handler
   const handleScroll = useCallback(() => {
     const y = window.scrollY;
     setNavScrolled(y > 20);
     setShowScrollTop(y > 400);
+
     const entries = Object.entries(sectionsRef.current);
     for (let i = entries.length - 1; i >= 0; i--) {
       const [id, el] = entries[i];
-      if (el && el.getBoundingClientRect().top <= 100) { setActiveSection(id); break; }
+      if (el && el.getBoundingClientRect().top <= 100) {
+        setActiveSection(id);
+        break;
+      }
     }
   }, []);
+
   const throttledScroll = useThrottledCallback(handleScroll, 80);
 
   useEffect(() => {
-    window.addEventListener("scroll", throttledScroll, { passive:true });
+    window.addEventListener("scroll", throttledScroll, { passive: true });
     return () => window.removeEventListener("scroll", throttledScroll);
   }, [throttledScroll]);
 
   const scrollTo = useCallback((id) => {
-    sectionsRef.current[id]?.scrollIntoView({ behavior:"smooth", block:"start" });
+    sectionsRef.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  // Filtered students for World section
   const filteredStudents = useMemo(
     () => selectedCountry ? STUDENTS.filter(s => s.country === selectedCountry) : STUDENTS,
     [selectedCountry]
   );
 
-  // Filtered students for grid (search)
   const searchedStudents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return STUDENTS;
     return STUDENTS.filter(s =>
-      s.name.toLowerCase().includes(q) ||
+      s.name.toLowerCase().includes(q)    ||
       s.country.toLowerCase().includes(q) ||
-      s.role.toLowerCase().includes(q) ||
+      s.role.toLowerCase().includes(q)    ||
       s.dream.toLowerCase().includes(q)
     );
   }, [searchQuery]);
 
-  // Modal navigation
   const selectedIdx = useMemo(
     () => selectedStudent ? STUDENTS.findIndex(s => s.id === selectedStudent.id) : -1,
     [selectedStudent]
   );
-  const openNext = useCallback(() => selectedIdx >= 0 && setSelectedStudent(STUDENTS[(selectedIdx + 1) % STUDENTS.length]), [selectedIdx]);
-  const openPrev = useCallback(() => selectedIdx >= 0 && setSelectedStudent(STUDENTS[(selectedIdx - 1 + STUDENTS.length) % STUDENTS.length]), [selectedIdx]);
+  const openNext = useCallback(() => {
+    if (selectedIdx < 0) return;
+    setSelectedStudent(STUDENTS[(selectedIdx + 1) % STUDENTS.length]);
+  }, [selectedIdx]);
+  const openPrev = useCallback(() => {
+    if (selectedIdx < 0) return;
+    setSelectedStudent(STUDENTS[(selectedIdx - 1 + STUDENTS.length) % STUDENTS.length]);
+  }, [selectedIdx]);
 
   if (loading) return <LoadingScreen progress={loadProgress} msg={loadMsg} />;
 
@@ -1522,16 +1717,19 @@ export default function Yearbook() {
       <style>{GLOBAL_CSS}</style>
 
       {/* ── DESKTOP NAV ── */}
-      <nav role="navigation" aria-label="Main navigation" style={{
-        position:"fixed", top:0, left:0, right:0, zIndex:100,
-        background: navScrolled ? "rgba(250,247,242,0.97)" : "rgba(250,247,242,0.78)",
-        backdropFilter:"blur(24px)",
-        WebkitBackdropFilter:"blur(24px)",
-        borderBottom: navScrolled ? "1px solid rgba(210,195,175,0.3)" : "1px solid transparent",
-        padding:"0 2rem", height:"var(--nav-h)",
-        display:"flex", alignItems:"center", justifyContent:"space-between",
-        transition:"background 0.3s ease, border-color 0.3s ease",
-      }}>
+      <nav
+        role="navigation"
+        aria-label="Main navigation"
+        style={{
+          position:"fixed", top:0, left:0, right:0, zIndex:100,
+          background: navScrolled ? "rgba(250,247,242,0.97)" : "rgba(250,247,242,0.78)",
+          backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
+          borderBottom: navScrolled ? "1px solid rgba(210,195,175,0.3)" : "1px solid transparent",
+          padding:"0 2rem", height:"var(--nav-h)",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          transition:"background 0.3s ease, border-color 0.3s ease",
+        }}
+      >
         <button
           onClick={() => scrollTo("home")}
           aria-label="Go to top"
@@ -1582,8 +1780,9 @@ export default function Yearbook() {
           padding:"76px 2rem 4rem", textAlign:"center",
         }}
       >
-        {PETALS.map((p, i) => <SakuraPetal key={i} style={p} />)}
-        {ORBS.map((o, i) => <FloatingOrb key={i} style={o} />)}
+        {/* Only render petals on non-mobile for performance */}
+        {!isMobile && PETALS.map((p, i) => <SakuraPetal key={i} style={p} />)}
+        {!isMobile && ORBS.map((o, i)   => <FloatingOrb key={i} style={o} />)}
 
         <div style={{ position:"relative", zIndex:2, animation:"fadeInUp 1s ease 0.15s both", maxWidth:680 }}>
           <div style={{ fontSize:11, letterSpacing:5.5, color:"var(--accent)", textTransform:"uppercase", marginBottom:28, fontWeight:700 }}>
@@ -1621,7 +1820,6 @@ export default function Yearbook() {
             }}>{CLASS_DATA.groupQuote}</p>
           </div>
 
-          {/* Mini avatars row */}
           <div className="hero-avatars" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
             {STUDENTS.slice(0, 8).map((s, i) => (
               <div key={s.id} style={{ marginLeft: i > 0 ? -14 : 0, zIndex: 8 - i }}>
@@ -1641,7 +1839,6 @@ export default function Yearbook() {
             20 students · 8 countries · 1 unforgettable year
           </p>
 
-          {/* Countdown */}
           <div style={{
             background:"rgba(255,255,255,0.72)", backdropFilter:"blur(16px)",
             border:"1px solid rgba(220,205,185,0.5)",
@@ -1652,7 +1849,6 @@ export default function Yearbook() {
           </div>
         </div>
 
-        {/* Scroll hint */}
         <div aria-hidden="true" style={{
           position:"absolute", bottom:30, left:"50%", transform:"translateX(-50%)",
           animation:"floatSlow 2.8s ease-in-out infinite", zIndex:2,
@@ -1676,7 +1872,6 @@ export default function Yearbook() {
           sub="From across Asia, brought together by Japanese and kept together by friendship. Tap any card to see their story."
         />
 
-        {/* Search bar */}
         <div style={{ display:"flex", justifyContent:"center", marginBottom:"2.5rem" }}>
           <div style={{ position:"relative", width:"100%", maxWidth:440 }}>
             <span aria-hidden="true" style={{
@@ -1695,8 +1890,7 @@ export default function Yearbook() {
           </div>
         </div>
 
-        {/* Empty state */}
-        {searchedStudents.length === 0 && (
+        {searchedStudents.length === 0 ? (
           <div style={{ textAlign:"center", padding:"3rem 0", color:"var(--text-muted)" }}>
             <div style={{ fontSize:40, marginBottom:12 }}>🌸</div>
             <p style={{ fontSize:15, fontFamily:"'Cormorant Garamond', Georgia, serif", fontStyle:"italic" }}>
@@ -1704,13 +1898,10 @@ export default function Yearbook() {
             </p>
             <button
               onClick={() => setSearchQuery("")}
-              style={{ marginTop:14, background:"none", border:"1px solid rgba(200,185,168,0.5)", borderRadius:50, padding:"8px 20px", fontSize:13, color:"var(--text-soft)", cursor:"pointer" }}
+              style={{ marginTop:14, background:"none", border:"1px solid rgba(200,185,168,0.5)", borderRadius:50, padding:"8px 20px", fontSize:13, color:"var(--text-soft)", cursor:"pointer", minHeight:40 }}
             >Clear search</button>
           </div>
-        )}
-
-        {/* Masonry grid — cards adapt to natural photo ratio */}
-        {searchedStudents.length > 0 && (
+        ) : (
           <div className="masonry-grid">
             {searchedStudents.map((s, i) => (
               <div key={s.id} className="masonry-item" style={{ animationDelay:`${i * 0.04}s` }}>
@@ -1753,8 +1944,8 @@ export default function Yearbook() {
                   borderRadius:18, padding:"0.9rem 1.1rem",
                   textAlign:"left", display:"flex", alignItems:"center", gap:11,
                   transition:"all 0.25s ease",
-                  animation:`fadeInUp 0.42s ease ${i*0.04}s both`,
-                  boxShadow:"var(--shadow-sm)", cursor:"pointer",
+                  animation:`fadeInUp 0.42s ease ${i * 0.04}s both`,
+                  boxShadow:"var(--shadow-sm)", cursor:"pointer", minHeight:64,
                 }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.background = "#fff"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.background = "rgba(255,255,255,0.82)"; }}
@@ -1783,7 +1974,6 @@ export default function Yearbook() {
           title="Polaroid Gallery"
           sub="Hover to relive the moment. Every photo holds a story only we know."
         />
-
         <div
           className="gallery-grid"
           style={{
@@ -1810,7 +2000,6 @@ export default function Yearbook() {
         <div style={{ maxWidth:840, margin:"0 auto" }}>
           <SectionHeading tag="Memories & Moments" title="Things We'll Never Forget" />
 
-          {/* Random memory */}
           <div style={{ marginBottom:"4.5rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:"1.5rem", textAlign:"center", fontWeight:600 }}>
               Random Memory
@@ -1818,7 +2007,6 @@ export default function Yearbook() {
             <RandomMemoryButton students={STUDENTS} />
           </div>
 
-          {/* Class quotes */}
           <div style={{ marginBottom:"4.5rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:"1.5rem", textAlign:"center", fontWeight:600 }}>
               Class Quotes
@@ -1828,7 +2016,6 @@ export default function Yearbook() {
             </div>
           </div>
 
-          {/* Anonymous notes */}
           <div style={{ marginBottom:"4.5rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:8, textAlign:"center", fontWeight:600 }}>
               Anonymous Friendship Notes
@@ -1839,7 +2026,6 @@ export default function Yearbook() {
             <AnonymousMessages />
           </div>
 
-          {/* Time capsule */}
           <div style={{ marginBottom:"2rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:"1.5rem", textAlign:"center", fontWeight:600 }}>
               Time Capsule
