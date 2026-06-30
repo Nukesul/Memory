@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, useContext, createContext } from "react";
 import yadaPhoto  from "./photo/yada.jpg";
 import yadaPhoto2 from "./photo/yada2.jpg";
 import ochi       from "./photo/ochi.jpg";
@@ -24,13 +24,19 @@ import nabi       from "./photo/nabi.jpg";
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 
 const CLASS_DATA = {
-  school:         "Sakura Japanese Language Academy",
-  class:          "Advanced Intensive Course — Class 3B",
-  year:           "2024–2025",
-  city:           "Kyoto, Japan",
-  graduationDate: "2025-03-20",
+  school:         "Nippon Academy",
+  schoolJa:       "日本アカデミー",
+  class:          "Class 2J",
+  classJa:        "2Jクラス",
+  year:           "2025–2027",
+  city:           "Maebashi, Gunma",
+  cityJa:         "群馬県前橋市",
+  duration:       "1 year 6 months",
+  durationJa:     "1年6ヶ月",
+  graduationDate: "2026-09-20",
   groupQuote:     "言葉は橋 — Words are bridges.",
   timeCapsula:    "Open this in 10 years and remember how young we were.",
+  timeCapsulaJa:  "10年後にこれを開いて、私たちがどれだけ若かったかを思い出して。",
 };
 
 const PHOTO_SETS = [
@@ -60,8 +66,8 @@ const STUDENTS = [
   { id:1,  name:"Asyl Mamatova",      country:"Kyrgyzstan",flag:"🇰🇬",initials:"AM",color:"#f2c4a0",dream:"Become a Japanese-Kyrgyz interpreter for diplomatic missions",          quote:"Жол — жүрүүгө. — The road is for those who walk it.",                              memory:"Making traditional Kyrgyz tea for the whole class and watching everyone's eyes light up.", emoji:"🏔️",role:"Cultural Ambassador",  photoSet:PHOTO_SETS[0]  },
   { id:2,  name:"Nursultan Bekov",     country:"Kyrgyzstan",flag:"🇰🇬",initials:"NB",color:"#a0bef2",dream:"Build a tech bridge between Central Asia and Japan",                           quote:"Сабыр түбү — сары алтын. — Patience is gold.",                                       memory:"Staying up until 3am coding a class website with Sensei's blessing.",                     emoji:"💻",role:"Tech Lead",           photoSet:PHOTO_SETS[1]  },
   { id:3,  name:"Madara Sulaimanova",  country:"Kyrgyzstan",flag:"🇰🇬",initials:"MS",color:"#c4a0f2",dream:"Open a Kyrgyz cultural center in Osaka",                                     quote:"Эл — деңиз. — The people are an ocean.",                                             memory:"Teaching the class Kyrgyz folk dance at the cultural festival night.",                     emoji:"🎭",role:"Cultural Director",  photoSet:PHOTO_SETS[2]  },
-  { id:4,  name:"Baiel Dzhaksybekov",  country:"Kyrgyzstan",flag:"🇰🇬",initials:"BD",color:"#a0f2c4",dream:"Write a manga series set in the Tian Shan mountains",                        quote:"Ар бир адам — бир дүйнө. — Every person is a whole world.",                          memory:"Sketching manga panels in every café from Kyoto to Nara.",                                emoji:"✏️",role:"Class Manga Artist", photoSet:PHOTO_SETS[3]  },
-  { id:5,  name:"Anjery Putri",        country:"Indonesia", flag:"🇮🇩",initials:"AP",color:"#f2a0a0",dream:"Fashion designer blending batik patterns with Japanese aesthetics",          quote:"Banyak jalan menuju Roma. — Many roads lead to Rome.",                               memory:"Finding batik fabric at a Kyoto market and making the whole class scarves.",               emoji:"🧣",role:"Style Maven",        photoSet:PHOTO_SETS[4]  },
+  { id:4,  name:"Baiel Dzhaksybekov",  country:"Kyrgyzstan",flag:"🇰🇬",initials:"BD",color:"#a0f2c4",dream:"Write a manga series set in the Tian Shan mountains",                        quote:"Ар бир адам — бир дүйнө. — Every person is a whole world.",                          memory:"Sketching manga panels in every café from Maebashi to Takasaki.",                                emoji:"✏️",role:"Class Manga Artist", photoSet:PHOTO_SETS[3]  },
+  { id:5,  name:"Anjery Putri",        country:"Indonesia", flag:"🇮🇩",initials:"AP",color:"#f2a0a0",dream:"Fashion designer blending batik patterns with Japanese aesthetics",          quote:"Banyak jalan menuju Roma. — Many roads lead to Rome.",                               memory:"Finding batik fabric at a Maebashi market and making the whole class scarves.",               emoji:"🧣",role:"Style Maven",        photoSet:PHOTO_SETS[4]  },
   { id:6,  name:"Nabira Salsabila",    country:"Indonesia", flag:"🇮🇩",initials:"NS",color:"#f2d4a0",dream:"Culinary journalist covering Southeast Asian street food in Japan",          quote:"Siapa yang menanam, dia yang menuai. — Reap what you sow.",                         memory:"Hosting a secret rendang tasting session in the dorm kitchen at midnight.",               emoji:"🌶️",role:"Food Correspondent",photoSet:PHOTO_SETS[5]  },
   { id:7,  name:"Chacha Maharani",     country:"Indonesia", flag:"🇮🇩",initials:"CM",color:"#a0f2f2",dream:"Produce a documentary on Indonesian diaspora in Japan",                     quote:"Ringan sama dijinjing, berat sama dipikul. — Share burdens and joys together.",     memory:"Filming every class moment — she always had her camera ready.",                           emoji:"🎬",role:"Class Filmmaker",   photoSet:PHOTO_SETS[6]  },
   { id:8,  name:"Hieu Nguyen",         country:"Vietnam",   flag:"🇻🇳",initials:"HN",color:"#c4f2a0",dream:"Software engineer at a Japanese robotics company",                          quote:"Có công mài sắt, có ngày nên kim. — Perseverance turns iron into a needle.",       memory:"Solving a kanji riddle that stumped the entire class in under a minute.",                 emoji:"🤖",role:"Logic Master",      photoSet:PHOTO_SETS[7]  },
@@ -76,7 +82,7 @@ const STUDENTS = [
   { id:17, name:"Beruguti Namsrai",    country:"Mongolia",  flag:"🇲🇳",initials:"BN",color:"#f2f0b0",dream:"Music producer blending Mongolian throat singing with J-pop",              quote:"Дуу хоолой — сэтгэлийн хэл. — Voice is the language of the soul.",                 memory:"Performing a live throat singing duet with the school's traditional music club.",         emoji:"🎶",role:"Music Soul",        photoSet:PHOTO_SETS[16] },
   { id:18, name:"Otogo Chimeddorj",    country:"Mongolia",  flag:"🇲🇳",initials:"OC",color:"#a0f2b4",dream:"Diplomat fostering Mongolia-Japan cultural exchanges",                     quote:"Нэгдсэн нь хүчтэй. — United we are strong.",                                        memory:"Organizing the class's end-of-year talent show from scratch in three days.",              emoji:"🎪",role:"Chief Organizer",   photoSet:PHOTO_SETS[17] },
   { id:19, name:"Yadana Kyaw",         country:"Myanmar",   flag:"🇲🇲",initials:"YK",color:"#f2c8a0",dream:"Journalist bringing Myanmar stories to a Japanese-speaking world",         quote:"ကြိုးစားမှ အောင်မြင်မည်။ — Effort brings success.",                                  memory:"Reading her own Burmese poetry translated into Japanese at the school festival.",         emoji:"📜",role:"Class Poet",        photoSet:PHOTO_SETS[18] },
-  { id:20, name:"Suman",               country:"Nepal",     flag:"🇳🇵",initials:"SU",color:"#a0d4f2",dream:"Chef opening a Thai-Japanese fusion restaurant in Kyoto",                 quote:"ทำดีได้ดี — Do good, receive good.",                                                 memory:"Cooking pad thai for 25 people in the dorm kitchen on New Year's Eve.",                   emoji:"🍜",role:"Class Chef",        photoSet:PHOTO_SETS[19] },
+  { id:20, name:"Suman",               country:"Nepal",     flag:"🇳🇵",initials:"SU",color:"#a0d4f2",dream:"Chef opening a Thai-Japanese fusion restaurant in Tokyo",                 quote:"ทำดีได้ดี — Do good, receive good.",                                                 memory:"Cooking pad thai for 25 people in the dorm kitchen on New Year's Eve.",                   emoji:"🍜",role:"Class Chef",        photoSet:PHOTO_SETS[19] },
 ];
 
 const FUNNY_QUOTES = [
@@ -90,38 +96,19 @@ const FUNNY_QUOTES = [
 ];
 
 const GALLERY_ITEMS = [
-  { id:1,  label:"First snow in Kyoto",    emoji:"❄️", bg:"linear-gradient(135deg,#e8f4fd,#d6eaf8)", note:"January morning, 6:04am",     rotate:-2   },
-  { id:2,  label:"Gion Festival night",    emoji:"🏮", bg:"linear-gradient(135deg,#fdf0e8,#fde4cc)", note:"Summer, unforgettable",        rotate:1.5  },
-  { id:3,  label:"Sakura season window",   emoji:"🌸", bg:"linear-gradient(135deg,#fde8f4,#fbd5e8)", note:"Classroom view, March",        rotate:-1   },
-  { id:4,  label:"Konbini late-night run", emoji:"🥟", bg:"linear-gradient(135deg,#e8fdf0,#d5f5e3)", note:"Every study night, 11pm",      rotate:2    },
-  { id:5,  label:"Arashiyama bamboo walk", emoji:"🎋", bg:"linear-gradient(135deg,#edfde8,#ddf5d5)", note:"October weekend trip",         rotate:-1.5 },
-  { id:6,  label:"Train station goodbyes", emoji:"🚃", bg:"linear-gradient(135deg,#e8eefb,#d5e3f5)", note:"Too many of these",            rotate:1    },
-  { id:7,  label:"Cultural festival day",  emoji:"🎉", bg:"linear-gradient(135deg,#fbf5e8,#f5e8cc)", note:"We danced for 3 hours",        rotate:-2.5 },
-  { id:8,  label:"Zen garden meditation",  emoji:"⛩️", bg:"linear-gradient(135deg,#f0e8fb,#e4d5f5)", note:"Ryoan-ji, 6am silence",        rotate:1.5  },
-  { id:9,  label:"Year-end class dinner",  emoji:"🍱", bg:"linear-gradient(135deg,#fbeee8,#f5ddd0)", note:"Someone cried (everyone)",     rotate:-1   },
-  { id:10, label:"Nara deer encounter",    emoji:"🦌", bg:"linear-gradient(135deg,#eef0e8,#e0ebd5)", note:"RIP someone's snacks",         rotate:2.5  },
-  { id:11, label:"Calligraphy class",      emoji:"🖌️", bg:"linear-gradient(135deg,#f0e8ee,#ead5e7)", note:"90-year-old sensei",           rotate:-2   },
-  { id:12, label:"Osaka aquarium trip",    emoji:"🐠", bg:"linear-gradient(135deg,#e8f7fb,#d5eef5)", note:"Zero studying happened",       rotate:1    },
+  { id:1,  label:"First snow in Maebashi",   labelJa:"前橋の初雪",          emoji:"❄️", bg:"linear-gradient(135deg,#e8f4fd,#d6eaf8)", note:"January morning, 6:04am",     noteJa:"1月の朝、6時04分",        rotate:-2   },
+  { id:2,  label:"Tanabata Festival night",  labelJa:"前橋七夕まつりの夜",  emoji:"🎋", bg:"linear-gradient(135deg,#fdf0e8,#fde4cc)", note:"Summer, unforgettable",        noteJa:"忘れられない夏の夜",      rotate:1.5  },
+  { id:3,  label:"Sakura season window",     labelJa:"桜咲く季節の窓辺",    emoji:"🌸", bg:"linear-gradient(135deg,#fde8f4,#fbd5e8)", note:"Classroom view, April",        noteJa:"教室からの眺め、4月",     rotate:-1   },
+  { id:4,  label:"Konbini late-night run",   labelJa:"深夜のコンビニ",      emoji:"🥟", bg:"linear-gradient(135deg,#e8fdf0,#d5f5e3)", note:"Every study night, 11pm",      noteJa:"勉強の夜はいつも23時",    rotate:2    },
+  { id:5,  label:"Lake Onuma hike",          labelJa:"大沼湖ハイキング",    emoji:"🏞️", bg:"linear-gradient(135deg,#edfde8,#ddf5d5)", note:"Mt. Akagi weekend trip",        noteJa:"赤城山への週末旅行",      rotate:-1.5 },
+  { id:6,  label:"Train station goodbyes",   labelJa:"駅でのお別れ",        emoji:"🚃", bg:"linear-gradient(135deg,#e8eefb,#d5e3f5)", note:"Too many of these",            noteJa:"何度も繰り返した光景",    rotate:1    },
+  { id:7,  label:"Maebashi Festival dance",  labelJa:"前橋まつりの踊り",    emoji:"🎉", bg:"linear-gradient(135deg,#fbf5e8,#f5e8cc)", note:"We danced for 3 hours",        noteJa:"3時間踊り続けた",         rotate:-2.5 },
+  { id:8,  label:"Akagi Shrine morning",     labelJa:"赤城神社の朝",        emoji:"⛩️", bg:"linear-gradient(135deg,#f0e8fb,#e4d5f5)", note:"Sunrise, complete silence",     noteJa:"日の出、静寂のひととき",  rotate:1.5  },
+  { id:9,  label:"Sauce katsudon night",     labelJa:"ソースカツ丼の夜",    emoji:"🍱", bg:"linear-gradient(135deg,#fbeee8,#f5ddd0)", note:"Someone cried (everyone)",     noteJa:"みんな泣いた（全員）",    rotate:-1   },
+  { id:10, label:"Hatsuichi daruma market",  labelJa:"初市だるま市",        emoji:"🪅", bg:"linear-gradient(135deg,#eef0e8,#e0ebd5)", note:"January, a 400-year tradition",noteJa:"1月、400年続く伝統",      rotate:2.5  },
+  { id:11, label:"Calligraphy class",        labelJa:"書道の授業",          emoji:"🖌️", bg:"linear-gradient(135deg,#f0e8ee,#ead5e7)", note:"90-year-old sensei",            noteJa:"90歳の先生",              rotate:-2   },
+  { id:12, label:"Tomioka Silk Mill trip",   labelJa:"富岡製糸場への旅",    emoji:"🏭", bg:"linear-gradient(135deg,#e8f7fb,#d5eef5)", note:"Zero studying happened",       noteJa:"勉強はゼロだった",        rotate:1    },
 ];
-
-const MEMORY_CAPSULE = [
-  "By the time you read this, your Japanese is probably perfect.",
-  "Remember the day it clicked — when you stopped translating and just understood.",
-  "You were brave enough to leave home and build a new one, even temporarily.",
-  "Keep the friends you made here. Distance cannot erase what you built.",
-  "These people believed in you on your worst days. They celebrated every small victory with you.",
-  "これはあなたの物語の小さな章です — This is a small chapter of your story.",
-];
-
-const INITIAL_MESSAGES = [
-  { id:1, text:"To whoever was always first in class — you inspired me to try harder. 🌸",               color:"#f0e8f8" },
-  { id:2, text:"Thank you for sharing your home food with everyone. It made us feel less far away. 🍱",  color:"#e8f0e8" },
-  { id:3, text:"I will never forget the night we got lost in Osaka and ended up having the best adventure.", color:"#f8f0e8" },
-  { id:4, text:"Your laugh is the soundtrack of this year. I hope you never change.",                     color:"#e8e8f8" },
-  { id:5, text:"Whoever taught me to say あなたが大好き — thank you for that lesson in bravery.",           color:"#f8f4e8" },
-];
-
-const NOTE_COLORS = ["#f0e8f8","#e8f0e8","#f8f0e8","#e8e8f8","#f8e8e8","#e8f8f0","#f8f4e8"];
 
 const LOAD_MSGS = [
   "思い出を読み込んでいます…",
@@ -131,21 +118,166 @@ const LOAD_MSGS = [
 ];
 
 const NAV_ITEMS = [
-  { id:"home",     label:"Home",       icon:"🏠" },
-  { id:"students", label:"Classmates", icon:"👥" },
-  { id:"world",    label:"World",      icon:"🌍" },
-  { id:"gallery",  label:"Gallery",    icon:"📸" },
-  { id:"memories", label:"Memories",   icon:"💌" },
+  { id:"home",     label:"Home",       labelJa:"ホーム",       icon:"🏠" },
+  { id:"students", label:"Classmates", labelJa:"クラスメート",  icon:"👥" },
+  { id:"world",    label:"World",      labelJa:"世界",         icon:"🌍" },
+  { id:"gallery",  label:"Gallery",    labelJa:"ギャラリー",    icon:"📸" },
+  { id:"memories", label:"Memories",   labelJa:"思い出",       icon:"💌" },
 ];
 
 const STATS = [
-  { label:"Countries", value:8,     emoji:"🌍", color:"#f2c4a0" },
-  { label:"Students",  value:20,    emoji:"👥", color:"#a0bef2" },
-  { label:"Languages", value:"10+", emoji:"💬", color:"#c4a0f2" },
-  { label:"Memories",  value:"∞",   emoji:"🌸", color:"#f2a0c4" },
+  { label:"Countries", labelJa:"国",       value:8,     emoji:"🌍", color:"#f2c4a0" },
+  { label:"Students",  labelJa:"生徒",     value:20,    emoji:"👥", color:"#a0bef2" },
+  { label:"Languages", labelJa:"言語",     value:"10+", emoji:"💬", color:"#c4a0f2" },
+  { label:"Memories",  labelJa:"思い出",   value:"∞",   emoji:"🌸", color:"#f2a0c4" },
 ];
 
-const GRADUATION = new Date("2025-03-20T09:00:00+09:00");
+const GRADUATION = new Date(`${CLASS_DATA.graduationDate}T09:00:00+09:00`);
+
+// ─── LANGUAGE / I18N ─────────────────────────────────────────────────────────
+
+const COUNTRY_JA = {
+  "Kyrgyzstan": "キルギス", "Indonesia": "インドネシア", "Vietnam": "ベトナム",
+  "Sri Lanka": "スリランカ", "China": "中国", "Nepal": "ネパール",
+  "Mongolia": "モンゴル", "Myanmar": "ミャンマー",
+};
+
+// Translated role / dream / memory for each student, keyed by id.
+// Quotes are left as-is (already bilingual: native proverb + English gloss).
+const STUDENT_JA = {
+  1:  { role:"文化大使",        dream:"外交の場で活躍する日本語・キルギス語通訳になること",                 memory:"クラス全員に伝統的なキルギスのお茶を淹れて、みんなの目が輝くのを見たこと" },
+  2:  { role:"テックリード",      dream:"中央アジアと日本をつなぐテクノロジーの架け橋を築くこと",             memory:"先生の許可をもらって、朝3時までクラスのウェブサイトのコードを書き続けたこと" },
+  3:  { role:"文化ディレクター",  dream:"大阪にキルギス文化センターを開くこと",                               memory:"文化祭の夜にクラスメートへキルギスの民族舞踊を教えたこと" },
+  4:  { role:"クラスの漫画家",    dream:"天山山脈を舞台にした漫画シリーズを描くこと",                         memory:"前橋から高崎まで、行く先々のカフェで漫画のコマを描き続けたこと" },
+  5:  { role:"スタイルの達人",    dream:"バティック柄と日本の美意識を融合させたファッションデザイナーになること", memory:"前橋の市場でバティック生地を見つけ、クラス全員にスカーフを作ったこと" },
+  6:  { role:"フード特派員",      dream:"日本で東南アジアの屋台料理を紹介するグルメジャーナリストになること",   memory:"真夜中に寮のキッチンでこっそりルンダン試食会を開いたこと" },
+  7:  { role:"クラスの映像作家",  dream:"日本に住むインドネシア人移民についてのドキュメンタリーを制作すること", memory:"いつもカメラを構えて、クラスのあらゆる瞬間を撮影し続けたこと" },
+  8:  { role:"ロジックの達人",    dream:"日本のロボティクス企業でソフトウェアエンジニアになること",           memory:"クラス全員が悩んだ漢字クイズを1分もかからず解いてみせたこと" },
+  9:  { role:"クラスの建築家",    dream:"アジア各地で竹をモチーフにした建築を手がける建築家になること",       memory:"先生へのお別れの贈り物として、竹で作った先生の家の小さな模型を作ったこと" },
+  10: { role:"茶会のホスト",      dream:"日本にスリランカの紅茶文化を紹介する紅茶ソムリエになること",         memory:"先生にセイロンティーを淹れたら、日本茶に負けないと言ってもらえたこと" },
+  11: { role:"海の守り手",        dream:"スリランカと日本のサンゴ礁を守る海洋生物学者になること",             memory:"沖縄でのシュノーケリング旅行でクラスを引率し、魚の名前を全部日本語で教えたこと" },
+  12: { role:"書道の達人",        dream:"中国と日本の書道の伝統をつなぐ書家になること",                       memory:"真夜中から日の出まで続く書道会を開いたこと" },
+  13: { role:"日の出ガイド",      dream:"ヒマラヤと日本アルプスを結ぶ登山ガイドになること",                   memory:"毎週月曜日、寮の屋上で日の出の瞑想を教えてくれたこと" },
+  14: { role:"クラスの家庭教師",  dream:"ネパールの農村にバイリンガル教育の学校を作る教育者になること",       memory:"クラス全員がN3試験に合格できるよう勉強会を企画したこと" },
+  15: { role:"野生動物の擁護者",  dream:"草原の絶滅危惧種を守る獣医師になること",                             memory:"文化祭の夜にモンゴルの伝統的な馬乳酒を持ってきて、みんなに挑戦させたこと" },
+  16: { role:"手仕事の女王",      dream:"モンゴルのフェルト工芸を現代的なコレクションに取り入れるファッションデザイナーになること", memory:"一晩かけてクラス全員分のお揃いのフェルトバッジを手縫いしたこと" },
+  17: { role:"音楽の魂",          dream:"モンゴルのホーミーとJ-POPを融合させる音楽プロデューサーになること",   memory:"学校の伝統音楽部とホーミーのデュエットをライブで披露したこと" },
+  18: { role:"統括オーガナイザー", dream:"モンゴルと日本の文化交流を育む外交官になること",                     memory:"たった3日でクラスの年末タレントショーをゼロから企画したこと" },
+  19: { role:"クラスの詩人",      dream:"ミャンマーの物語を日本語の世界に届けるジャーナリストになること",       memory:"学園祭で、自作のビルマ語の詩を日本語に訳して朗読したこと" },
+  20: { role:"クラスのシェフ",    dream:"東京でタイ料理と日本料理を融合させたレストランを開くこと",           memory:"大晦日に寮のキッチンで25人分のパッタイを作ったこと" },
+};
+
+function trStudent(student, lang) {
+  if (lang !== "ja") return student;
+  const ja = STUDENT_JA[student.id];
+  return {
+    ...student,
+    country: COUNTRY_JA[student.country] || student.country,
+    role:    ja?.role   || student.role,
+    dream:   ja?.dream  || student.dream,
+    memory:  ja?.memory || student.memory,
+  };
+}
+
+const STRINGS = {
+  en: {
+    heroTagline:        "20 students · 8 countries · 1 year 6 months together",
+    classOf:             `Class of ${CLASS_DATA.year}`,
+    scrollHint:          "Scroll",
+    searchPlaceholder:   "Search by name, country, or role…",
+    noMatch:              q => `No classmates match "${q}"`,
+    clearSearch:          "Clear search",
+    classmatesTag:        "Our Class",
+    classmatesTitle:      "Classmates",
+    classmatesSub:        "From across Asia, brought together by Japanese and kept together by friendship. Tap any card to see their story.",
+    constellationTag:     "One Sky, Twenty Stars",
+    constellationTitle:   "The Class Constellation",
+    constellationSub:     "Each cluster of light is a country. Each thread is a friendship that crossed it.",
+    constellationCaption: "Glowing threads link classmates from the same country. Tap a flag to spotlight one cluster, or tap any star to revisit them.",
+    worldTag:              "Where We Come From",
+    worldTitle:            "A World in One Classroom",
+    worldSub:              "Every seat held a different story. Every voice added a new color to our shared year.",
+    worldDefault:           "Tap a country to spotlight your classmates",
+    worldShowing:           (n, c) => `✦ Showing ${n} student${n !== 1 ? "s" : ""} from ${c}`,
+    showEveryone:           "× Show everyone",
+    galleryTag:             "Photo Memories",
+    galleryTitle:           "Polaroid Gallery",
+    gallerySub:              "Hover to relive the moment. Every photo holds a story only we know.",
+    memoriesTag:             "Memories & Moments",
+    memoriesTitle:           "Things We'll Never Forget",
+    randomMemoryHeading:     "Random Memory",
+    randomMemoryIdle:        "Surface a random memory",
+    randomMemorySpinning:    "Finding a memory…",
+    classQuotesHeading:      "Class Quotes",
+    nextReunionHeading:      "Next Reunion",
+    nextReunionSub:          "The clock is already counting down.",
+    dreamLabel:              "Dream",
+    memoryLabel:             "Memory from Japan",
+    prevBtn:                 "← Prev",
+    nextBtn:                 "Next →",
+    swipeHint:               "← swipe to navigate students →",
+    untilGraduation:         "Until graduation",
+    graduatedAgo:            d => `Graduated ${d} days ago 🌸`,
+    memoriesForever:         "The memories remain forever.",
+    countdownAnniversary:    y => `Countdown to our ${y === 1 ? "1-year" : `${y}-year`} class anniversary`,
+    markCalendar:            d => `Mark your calendar — ${d}`,
+    languagePickerTitle:     "Welcome! / ようこそ！",
+    languagePickerSub:       "Please choose your language to continue.",
+    languagePickerEn:        "English",
+    languagePickerJa:        "日本語",
+    changeLanguage:          "Change language",
+  },
+  ja: {
+    heroTagline:        "20人の生徒 · 8つの国 · 1年6ヶ月の時間",
+    classOf:             `${CLASS_DATA.year}年度卒業`,
+    scrollHint:          "スクロール",
+    searchPlaceholder:   "名前、国、役割で検索…",
+    noMatch:              q => `「${q}」に一致するクラスメートはいません`,
+    clearSearch:          "検索をクリア",
+    classmatesTag:        "私たちのクラス",
+    classmatesTitle:      "クラスメート",
+    classmatesSub:        "アジア各地から集まり、日本語によって出会い、友情によって結ばれた仲間たち。カードをタップしてストーリーを見てみよう。",
+    constellationTag:     "ひとつの空、20の星",
+    constellationTitle:   "クラスの星座",
+    constellationSub:     "光のかたまりはそれぞれの国。一本一本の糸は、国境を越えた友情。",
+    constellationCaption: "輝く糸は同じ国出身のクラスメート同士をつないでいます。国旗をタップすると一つのグループを際立たせ、星をタップするとプロフィールを見られます。",
+    worldTag:              "私たちの出身地",
+    worldTitle:            "ひとつの教室にある世界",
+    worldSub:              "それぞれの席に、それぞれの物語があった。それぞれの声が、私たちの一年に新しい彩りを加えてくれた。",
+    worldDefault:           "国をタップしてクラスメートを表示",
+    worldShowing:           (n, c) => `✦ ${c}出身の生徒を${n}人表示中`,
+    showEveryone:           "× 全員を表示",
+    galleryTag:             "写真の思い出",
+    galleryTitle:           "ポラロイド・ギャラリー",
+    gallerySub:              "ホバーすると、その瞬間が蘇ります。どの写真にも、私たちだけが知る物語があります。",
+    memoriesTag:             "思い出のひととき",
+    memoriesTitle:           "決して忘れない出来事",
+    randomMemoryHeading:     "ランダムな思い出",
+    randomMemoryIdle:        "ランダムな思い出を表示",
+    randomMemorySpinning:    "思い出を探しています…",
+    classQuotesHeading:      "クラスの名言",
+    nextReunionHeading:      "次の同窓会",
+    nextReunionSub:          "カウントダウンはすでに始まっています。",
+    dreamLabel:              "夢",
+    memoryLabel:             "日本での思い出",
+    prevBtn:                 "← 前へ",
+    nextBtn:                 "次へ →",
+    swipeHint:               "← スワイプして他の生徒を見る →",
+    untilGraduation:         "卒業まで",
+    graduatedAgo:            d => `卒業から${d}日 🌸`,
+    memoriesForever:         "思い出は永遠に残ります。",
+    countdownAnniversary:    y => `クラス結成${y}周年までのカウントダウン`,
+    markCalendar:            d => `カレンダーに書き込もう — ${d}`,
+    languagePickerTitle:     "Welcome! / ようこそ！",
+    languagePickerSub:       "言語を選択して続けてください。",
+    languagePickerEn:        "English",
+    languagePickerJa:        "日本語",
+    changeLanguage:          "言語を変更",
+  },
+};
+
+const LangContext = createContext({ lang: "en", t: (k) => STRINGS.en[k], setLang: () => {} });
+function useLang() { return useContext(LangContext); }
 
 // ─── GLOBAL CSS ────────────────────────────────────────────────────────────────
 
@@ -323,8 +455,8 @@ const GLOBAL_CSS = `
   @media (hover: none) { .s-cta { opacity: 0.8; transform: none; } }
 
   /* ── Masonry grid ── */
-  .masonry-grid { columns: 3 190px; column-gap: 14px; }
-  .masonry-item { break-inside: avoid; margin-bottom: 14px; display: inline-block; width: 100%; vertical-align: top; }
+  .masonry-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; align-items: start; }
+  .masonry-item { width: 100%; }
 
   /* ── Search input ── */
   .search-input {
@@ -410,7 +542,7 @@ const GLOBAL_CSS = `
   }
 
   /* ── Responsive ── */
-  @media (max-width: 900px) { .masonry-grid { columns: 2 180px; } }
+  @media (max-width: 900px) { .masonry-grid { grid-template-columns: repeat(2, 1fr); } }
 
   @media (max-width: 640px) {
     .bottom-nav { display: flex; flex-direction: column; justify-content: flex-end; }
@@ -418,8 +550,8 @@ const GLOBAL_CSS = `
     .desktop-pill { display: none !important; }
     .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
     .hero-title { font-size: clamp(54px,17vw,96px) !important; }
-    .masonry-grid { columns: 2 140px; column-gap: 10px; }
-    .masonry-item { margin-bottom: 10px; }
+    .masonry-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .masonry-item { margin-bottom: 0; }
     .world-grid { grid-template-columns: repeat(1,1fr) !important; }
     .gallery-grid { grid-template-columns: repeat(2,1fr) !important; gap: 18px !important; }
     .quote-grid { gap: 10px !important; }
@@ -431,11 +563,37 @@ const GLOBAL_CSS = `
     .s-card .s-toggle { backdrop-filter: none; -webkit-backdrop-filter: none; }
   }
 
-  /* Force toggle + arrows visible on touch screens */
+  /* Single column on phones — overlay text always has full card width to
+     breathe, so role names/titles never get clipped by overflow:hidden. */
+  @media (max-width: 480px) {
+    .masonry-grid { grid-template-columns: 1fr; gap: 16px; }
+  }
+
+  /* ── Student card overlay: prevent long role names / titles from being
+     clipped by the card's overflow:hidden on narrow phone widths ── */
+  .s-role-row {
+    display: flex; align-items: center; gap: 6px; min-width: 0;
+  }
+  .s-role-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    min-width: 0; max-width: 100%;
+    overflow: hidden;
+  }
+  .s-role-badge span:last-child {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+  }
+
+  /* Force toggle + arrows visible on touch screens, with roomier tap targets */
   @media (hover: none) {
-    .s-toggle { opacity: 0.85 !important; }
+    .s-toggle { opacity: 0.85 !important; width: 38px !important; height: 38px !important; font-size: 15px !important; }
+    .s-photo-nav { width: 40px !important; height: 40px !important; font-size: 16px !important; }
     .s-cta    { opacity: 0.8  !important; transform: none !important; }
   }
+
+  /* ── Language picker ── */
+  .lang-pick-btn { transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease, background 0.2s ease; }
+  .lang-pick-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(80,50,30,0.2); }
+  .lang-pick-btn:active { transform: scale(0.97); }
 `;
 
 // ─── HOOKS ─────────────────────────────────────────────────────────────────────
@@ -666,8 +824,10 @@ const Avatar = React.memo(function Avatar({ student, size = 80 }) {
 const StudentCard = React.memo(function StudentCard({ student, onClick }) {
   const [photoIdx,  setPhotoIdx]  = useState(0);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [showQuote, setShowQuote] = useState(false);
   const revealRef = useRef(null);
   useReveal(revealRef);
+  const isMobile = useIsMobile();
 
   const currentPhoto = student.photoSet?.[photoIdx] ?? null;
   const hasSecond    = !!(student.photoSet && student.photoSet[0] !== student.photoSet[1]);
@@ -695,6 +855,11 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
     e.stopPropagation();
     setImgLoaded(false);
     setPhotoIdx(i);
+  }, []);
+
+  const revealQuote = useCallback((e) => {
+    e.stopPropagation();
+    setShowQuote(v => !v);
   }, []);
 
   return (
@@ -758,12 +923,12 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
         <div className="s-overlay-top">
           <div style={{
             background:"rgba(255,255,255,0.93)", backdropFilter:"blur(12px)",
-            borderRadius:50, padding:"3px 10px",
+            borderRadius:50, padding: isMobile ? "5px 12px" : "3px 10px",
             display:"flex", alignItems:"center", gap:4,
             boxShadow:"0 2px 12px rgba(0,0,0,0.1)",
           }}>
-            <span style={{ fontSize:12 }}>{student.flag}</span>
-            <span style={{ fontSize:9, color:"#555", letterSpacing:0.3, fontWeight:700 }}>{student.country}</span>
+            <span style={{ fontSize: isMobile ? 14 : 12 }}>{student.flag}</span>
+            <span style={{ fontSize: isMobile ? 10.5 : 9, color:"#555", letterSpacing:0.3, fontWeight:700 }}>{student.country}</span>
           </div>
 
           {/* Desktop toggle button (hover) */}
@@ -772,14 +937,15 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
           )}
         </div>
 
-        <div className="s-overlay-bottom">
+        <div className="s-overlay-bottom" style={{ padding: isMobile ? "1rem 1rem 1rem" : undefined }}>
           {hasSecond && (
-            <div style={{ display:"flex", gap:5, marginBottom:7 }}>
+            <div style={{ display:"flex", gap: isMobile ? 6 : 5, marginBottom:7 }}>
               {[0, 1].map(i => (
                 <div
                   key={i}
                   className={`photo-dot${photoIdx === i ? " active" : ""}`}
                   onClick={(e) => setDotPhoto(e, i)}
+                  style={isMobile ? { width:9, height:9 } : undefined}
                 />
               ))}
             </div>
@@ -787,25 +953,56 @@ const StudentCard = React.memo(function StudentCard({ student, onClick }) {
 
           <div style={{
             fontFamily:"'Cormorant Garamond', Georgia, serif",
-            fontSize:15, fontWeight:700, color:"#fff",
+            fontSize: isMobile ? 18 : 15, fontWeight:700, color:"#fff",
             lineHeight:1.2, marginBottom:6,
             textShadow:"0 1px 8px rgba(0,0,0,0.55)",
           }}>{student.name}</div>
 
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <div style={{
-              display:"inline-flex", alignItems:"center", gap:4,
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+            <div className="s-role-badge" style={{
+              flex:"1 1 auto",
               background:`${student.color}cc`, backdropFilter:"blur(6px)",
-              borderRadius:50, padding:"3px 9px",
-              fontSize:9.5, color:"#fff", letterSpacing:0.3, fontWeight:700,
+              borderRadius:50, padding: isMobile ? "5px 11px" : "3px 9px",
+              fontSize: isMobile ? 11 : 9.5, color:"#fff", letterSpacing:0.3, fontWeight:700,
               border:"1px solid rgba(255,255,255,0.2)",
             }}>
-              <span style={{ fontSize:9.5 }}>{student.emoji}</span>
-              {student.role}
+              <span style={{ fontSize: isMobile ? 11 : 9.5, flexShrink:0 }}>{student.emoji}</span>
+              <span>{student.role}</span>
             </div>
-            <span className="s-cta">View →</span>
+            <button
+              onClick={revealQuote}
+              aria-label={`Reveal ${student.name.split(" ")[0]}'s quote`}
+              style={{
+                background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.3)",
+                borderRadius:50, color:"#fff", fontSize: isMobile ? 13 : 11.5,
+                width: isMobile ? 30 : 26, height: isMobile ? 30 : 26,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                flexShrink:0, backdropFilter:"blur(6px)",
+              }}
+            >✦</button>
           </div>
         </div>
+
+        {/* Playful quote flip — tap the ✦ to reveal a line from this classmate, tap again to close */}
+        {showQuote && (
+          <div
+            onClick={revealQuote}
+            style={{
+              position:"absolute", inset:0, zIndex:6,
+              background:"rgba(10,6,4,0.86)", backdropFilter:"blur(8px)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              padding:"1.6rem", textAlign:"center",
+              animation:"fadeIn 0.25s ease", cursor:"pointer",
+            }}
+          >
+            <p style={{
+              fontFamily:"'Cormorant Garamond', Georgia, serif", fontStyle:"italic",
+              color:"#fff", fontSize: isMobile ? 16 : 14, lineHeight:1.7,
+            }}>
+              “{student.quote}”
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -818,6 +1015,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
   const [transitioning, setTransitioning] = useState(false);
   const [imgLoaded,     setImgLoaded]     = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useLang();
 
   useEffect(() => {
     setPhotoIdx(0);
@@ -910,8 +1108,8 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
           position:"relative",
           background:`linear-gradient(155deg, ${student.color}cc, ${student.color}55)`,
           overflow:"hidden",
-          maxHeight: isMobile ? "42vh" : "92vh",
-          display:"flex", alignItems:"flex-start",
+          maxHeight: isMobile ? "52vh" : "92vh",
+          display:"flex", alignItems:"center", justifyContent:"center",
         }}>
           {currentPhoto ? (
             <img
@@ -921,18 +1119,18 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
               onLoad={() => setImgLoaded(true)}
               style={{
                 width:"100%",
-                height: isMobile ? "100%" : "auto",
-                objectFit: isMobile ? "cover" : "contain",
-                objectPosition:"top center",
+                height: "auto",
+                objectFit: "contain",
+                objectPosition:"center",
                 display:"block",
                 opacity: transitioning ? 0 : (imgLoaded ? 1 : 0),
                 transition:"opacity 0.25s ease",
-                maxHeight: isMobile ? "42vh" : "90vh",
+                maxHeight: isMobile ? "52vh" : "90vh",
               }}
             />
           ) : (
             <div style={{
-              width:"100%", minHeight: isMobile ? "42vh" : 380,
+              width:"100%", minHeight: isMobile ? "52vh" : 380,
               display:"flex", flexDirection:"column",
               alignItems:"center", justifyContent:"center", gap:12,
             }}>
@@ -1051,7 +1249,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
           </div>
 
           <div style={{ marginBottom:"1.2rem" }}>
-            <div style={{ fontSize:9.5, textTransform:"uppercase", letterSpacing:2.5, color:"#c8b8a8", marginBottom:7, fontWeight:700 }}>Dream</div>
+            <div style={{ fontSize:9.5, textTransform:"uppercase", letterSpacing:2.5, color:"#c8b8a8", marginBottom:7, fontWeight:700 }}>{t("dreamLabel")}</div>
             <p style={{
               fontSize:13.5, color:"#2a2a2a", fontWeight:400, lineHeight:1.7,
               background:"rgba(255,255,255,0.72)",
@@ -1072,7 +1270,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
           </blockquote>
 
           <div style={{ marginBottom:"1.4rem" }}>
-            <div style={{ fontSize:9.5, textTransform:"uppercase", letterSpacing:2.5, color:"#c8b8a8", marginBottom:7, fontWeight:700 }}>Memory from Japan</div>
+            <div style={{ fontSize:9.5, textTransform:"uppercase", letterSpacing:2.5, color:"#c8b8a8", marginBottom:7, fontWeight:700 }}>{t("memoryLabel")}</div>
             <div style={{
               background:"linear-gradient(135deg, rgba(250,248,244,0.96), rgba(245,242,236,0.96))",
               borderRadius:16, padding:"1rem 1.1rem",
@@ -1090,7 +1288,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
             borderTop:"1px solid rgba(220,210,200,0.4)", paddingTop:"1rem",
             gap:10,
           }}>
-            {[["← Prev", onPrev], ["Next →", onNext]].map(([label, handler]) => (
+            {[[t("prevBtn"), onPrev], [t("nextBtn"), onNext]].map(([label, handler]) => (
               <button
                 key={label}
                 onClick={handler}
@@ -1108,7 +1306,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
           </div>
 
           {isMobile && (
-            <p className="modal-swipe-hint">← swipe to navigate students →</p>
+            <p className="modal-swipe-hint">{t("swipeHint")}</p>
           )}
         </div>
       </div>
@@ -1119,6 +1317,7 @@ function StudentModal({ student, onClose, onNext, onPrev }) {
 // ─── WORLD SECTION ─────────────────────────────────────────────────────────────
 
 function WorldSection({ students, onSelectCountry, selectedCountry }) {
+  const { lang, t } = useLang();
   const countryGroups = useMemo(() => {
     return students.reduce((acc, s) => {
       if (!acc[s.country]) acc[s.country] = [];
@@ -1144,7 +1343,7 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
             <div aria-hidden="true" style={{ position:"absolute", top:-18, right:-18, width:80, height:80, borderRadius:"50%", background:s.color, opacity:0.2, filter:"blur(14px)", pointerEvents:"none" }} />
             <div aria-hidden="true" style={{ fontSize:26, marginBottom:8 }}>{s.emoji}</div>
             <div style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:38, fontWeight:700, color:"#1e1410", lineHeight:1 }}>{s.value}</div>
-            <div style={{ fontSize:10.5, color:"#b0a090", letterSpacing:1.5, textTransform:"uppercase", marginTop:5, fontWeight:700 }}>{s.label}</div>
+            <div style={{ fontSize:10.5, color:"#b0a090", letterSpacing:1.5, textTransform:"uppercase", marginTop:5, fontWeight:700 }}>{lang === "ja" ? s.labelJa : s.label}</div>
           </div>
         ))}
       </div>
@@ -1152,8 +1351,8 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
       <div style={{ marginBottom:"2.5rem" }}>
         <p style={{ fontSize:13, color:"#c0b0a0", marginBottom:14, textAlign:"center" }}>
           {selectedCountry
-            ? `✦ Showing ${countryGroups[selectedCountry]?.length} student${countryGroups[selectedCountry]?.length !== 1 ? "s" : ""} from ${selectedCountry}`
-            : "Tap a country to spotlight your classmates"}
+            ? t("worldShowing")(countryGroups[selectedCountry]?.length, selectedCountry)
+            : t("worldDefault")}
         </p>
         <div role="group" aria-label="Filter by country" style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
           {countries.map(country => {
@@ -1195,7 +1394,7 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
                 borderRadius:50, padding:"9px 16px", minHeight:42,
                 fontSize:12.5, color:"#c0b0a0", fontWeight:500, transition:"all 0.2s",
               }}
-            >× Show everyone</button>
+            >{t("showEveryone")}</button>
           )}
         </div>
       </div>
@@ -1208,6 +1407,7 @@ function WorldSection({ students, onSelectCountry, selectedCountry }) {
 const GalleryItem = React.memo(function GalleryItem({ item, index }) {
   const revealRef = useRef(null);
   useReveal(revealRef, index * 0.04);
+  const { lang } = useLang();
 
   return (
     <div
@@ -1238,8 +1438,8 @@ const GalleryItem = React.memo(function GalleryItem({ item, index }) {
         </div>
       </div>
       <div style={{ marginTop:8, textAlign:"center" }}>
-        <div style={{ fontSize:11.5, fontWeight:700, color:"#2d2420", marginBottom:2 }}>{item.label}</div>
-        <div style={{ fontSize:10, color:"#b0a090", fontStyle:"italic", fontFamily:"'Cormorant Garamond', Georgia, serif" }}>{item.note}</div>
+        <div style={{ fontSize:11.5, fontWeight:700, color:"#2d2420", marginBottom:2 }}>{lang === "ja" ? item.labelJa : item.label}</div>
+        <div style={{ fontSize:10, color:"#b0a090", fontStyle:"italic", fontFamily:"'Cormorant Garamond', Georgia, serif" }}>{lang === "ja" ? item.noteJa : item.note}</div>
       </div>
     </div>
   );
@@ -1273,148 +1473,257 @@ const QuoteCard = React.memo(function QuoteCard({ item, index }) {
   );
 });
 
-// ─── ANONYMOUS MESSAGES ────────────────────────────────────────────────────────
+// ─── CLASS CONSTELLATION ─────────────────────────────────────────────────────────
 
-function AnonymousMessages() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [draft,    setDraft]    = useState("");
+function ClassConstellation({ students, onSelect }) {
+  const isMobile = useIsMobile();
+  const { t } = useLang();
+  const W = isMobile ? 380 : 800;
+  const H = isMobile ? 620 : 440;
+  const edgeMargin = isMobile ? 36 : 50;
+  const yFlatten   = isMobile ? 0.92 : 0.82;
 
-  const add = useCallback(() => {
-    const text = draft.trim();
-    if (!text) return;
-    const color = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
-    setMessages(m => [...m, { id: Date.now(), text, color }]);
-    setDraft("");
-  }, [draft]);
+  const points = useMemo(() => {
+    return students.map((s, i) => {
+      const angle  = i * 2.39996; // golden angle — even, organic spread
+      const radius = 24 + Math.sqrt((i + 1) / students.length) * (Math.min(W, H) / 2 - edgeMargin);
+      return {
+        ...s,
+        x: W / 2 + radius * Math.cos(angle),
+        y: H / 2 + radius * Math.sin(angle) * yFlatten,
+      };
+    });
+  }, [students, W, H, edgeMargin, yFlatten]);
 
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === "Enter") add();
-  }, [add]);
+  // Meaningful links: classmates from the same country form a glowing cluster;
+  // a few faint cross-country threads tie the whole sky together.
+  const { countryLines, crossLines, countries } = useMemo(() => {
+    const byCountry = new Map();
+    points.forEach(p => {
+      if (!byCountry.has(p.country)) byCountry.set(p.country, []);
+      byCountry.get(p.country).push(p);
+    });
+
+    const cLines = [];
+    byCountry.forEach(group => {
+      for (let a = 0; a < group.length; a++) {
+        for (let b = a + 1; b < group.length; b++) {
+          cLines.push({
+            key: `c-${group[a].id}-${group[b].id}`,
+            x1: group[a].x, y1: group[a].y, x2: group[b].x, y2: group[b].y,
+            country: group[a].country, color: group[a].color,
+          });
+        }
+      }
+    });
+
+    const seen = new Set();
+    const xLines = [];
+    points.forEach((p, i) => {
+      const nearestOther = points
+        .map((q, j) => ({ j, d: (i === j || q.country === p.country) ? Infinity : Math.hypot(p.x - q.x, p.y - q.y) }))
+        .sort((a, b) => a.d - b.d)[0];
+      if (nearestOther && nearestOther.d !== Infinity) {
+        const j = nearestOther.j;
+        const key = i < j ? `x-${i}-${j}` : `x-${j}-${i}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          xLines.push({ key, x1: p.x, y1: p.y, x2: points[j].x, y2: points[j].y });
+        }
+      }
+    });
+
+    return {
+      countryLines: cLines,
+      crossLines: xLines,
+      countries: [...byCountry.entries()].map(([country, group]) => ({
+        country, flag: group[0].flag, color: group[0].color, count: group.length,
+      })),
+    };
+  }, [points]);
+
+  const [hoverId, setHoverId] = useState(null);
+  const [activeCountry, setActiveCountry] = useState(null);
+
+  const isDimmed = (countryOfPoint) => activeCountry && countryOfPoint !== activeCountry;
 
   return (
-    <section aria-label="Anonymous friendship notes">
-      <div style={{ display:"grid", gap:10, marginBottom:"1.4rem" }}>
-        {messages.map((m, i) => (
-          <div key={m.id} style={{
-            background: m.color, borderRadius:16, padding:"1rem 1.25rem",
-            fontSize:14, color:"#4a3a30", lineHeight:1.8,
-            border:"1px solid rgba(255,255,255,0.85)",
-            animation: i === messages.length - 1 ? "slideIn 0.4s ease" : "none",
-            boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
-          }}>{m.text}</div>
+    <div style={{
+      background: "radial-gradient(ellipse at 50% 30%, rgba(52,36,58,0.96) 0%, rgba(16,10,18,0.98) 100%)",
+      borderRadius: 26, padding: "1.6rem 0.6rem 1.2rem", overflow: "hidden", position: "relative",
+    }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", display: "block", touchAction: "manipulation" }}
+        role="img"
+        aria-label="Constellation of classmates grouped by home country — tap a star to view their profile"
+      >
+        <defs>
+          <filter id="starGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {crossLines.map(l => (
+          <line key={l.key} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+            stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
         ))}
+        {countryLines.map(l => (
+          <line key={l.key} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+            stroke={l.color}
+            strokeOpacity={isDimmed(l.country) ? 0.08 : 0.55}
+            strokeWidth={isDimmed(l.country) ? 1 : 1.6}
+            style={{ transition: "stroke-opacity 0.25s ease" }}
+          />
+        ))}
+        {points.map((p, i) => {
+          const isHover  = hoverId === p.id;
+          const dimmed   = isDimmed(p.country);
+          return (
+            <g
+              key={p.id}
+              onClick={() => onSelect(p)}
+              onMouseEnter={() => setHoverId(p.id)}
+              onMouseLeave={() => setHoverId(null)}
+              style={{ cursor: "pointer", opacity: dimmed ? 0.22 : 1, transition: "opacity 0.25s ease" }}
+            >
+              {/* invisible larger hit area for easy tapping on mobile */}
+              <circle cx={p.x} cy={p.y} r={isMobile ? 28 : 22} fill="transparent" />
+              <circle
+                cx={p.x} cy={p.y} r={isHover ? (isMobile ? 23 : 19) : (isMobile ? 17 : 13)}
+                fill={p.color} opacity={isHover ? 0.98 : 0.82}
+                filter="url(#starGlow)"
+                style={{ transition: "r 0.18s ease, opacity 0.18s ease" }}
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.5;0.9;0.5"
+                  dur={`${3 + (i % 5)}s`}
+                  begin={`${(i % 7) * 0.4}s`}
+                  repeatCount="indefinite"
+                />
+              </circle>
+              <text x={p.x} y={p.y + (isMobile ? 5 : 4)} textAnchor="middle" fontSize={isMobile ? 15 : 12} style={{ pointerEvents: "none" }}>
+                {p.emoji}
+              </text>
+              {isHover && (
+                <text x={p.x} y={p.y - (isMobile ? 30 : 26)} textAnchor="middle" fontSize={isMobile ? 14 : 13} fill="#fff" fontWeight="700" style={{ pointerEvents: "none" }}>
+                  {p.name.split(" ")[0]}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: isMobile ? "nowrap" : "wrap",
+          overflowX: isMobile ? "auto" : "visible",
+          WebkitOverflowScrolling: "touch",
+          justifyContent: isMobile ? "flex-start" : "center",
+          gap: 8, marginTop: 14, padding: isMobile ? "0 4px 4px" : 0,
+        }}
+      >
+        {countries.map(c => {
+          const isSel = activeCountry === c.country;
+          return (
+            <button
+              key={c.country}
+              onClick={() => setActiveCountry(isSel ? null : c.country)}
+              aria-pressed={isSel}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+                background: isSel ? `${c.color}33` : "rgba(255,255,255,0.08)",
+                border: isSel ? `1.5px solid ${c.color}` : "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 50, padding: "8px 14px", minHeight: 40,
+                fontSize: 12.5, color: "rgba(255,255,255,0.85)", fontWeight: 600,
+                transition: "all 0.2s ease", cursor: "pointer",
+              }}
+            >
+              <span aria-hidden="true">{c.flag}</span>{c.country}
+            </button>
+          );
+        })}
       </div>
-      <div style={{ display:"flex", gap:10 }}>
-        <input
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Leave an anonymous note for a classmate…"
-          aria-label="Anonymous note"
-          maxLength={280}
-          className="search-input"
-          style={{ flex:1, borderRadius:50 }}
-          onFocus={e  => { e.target.style.borderColor = "rgba(196,119,90,0.5)"; }}
-          onBlur={e   => { e.target.style.borderColor = "rgba(200,185,168,0.45)"; }}
-        />
-        <button
-          onClick={add}
-          aria-label="Send note"
-          style={{
-            background:"linear-gradient(135deg, #c4775a, #b46040)",
-            color:"white", border:"none", borderRadius:50,
-            padding:"13px 24px", fontSize:13.5, fontWeight:700,
-            boxShadow:"0 4px 16px rgba(196,119,90,0.35)",
-            transition:"all 0.22s ease", flexShrink:0, minHeight:44,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 7px 24px rgba(196,119,90,0.45)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(196,119,90,0.35)"; }}
-        >Send ✦</button>
-      </div>
-    </section>
+
+      <p style={{ textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 12, fontStyle: "italic" }}>
+        {t("constellationCaption")}
+      </p>
+    </div>
   );
 }
 
-// ─── TIME CAPSULE ──────────────────────────────────────────────────────────────
+// ─── REUNION COUNTDOWN ──────────────────────────────────────────────────────────
 
-function TimeCapsule() {
-  const [revealed, setRevealed] = useState(false);
-  const [opening,  setOpening]  = useState(false);
+function getNextAnniversary(graduationDateStr) {
+  const grad = new Date(graduationDateStr);
+  const now  = new Date();
+  let target = new Date(now.getFullYear(), grad.getMonth(), grad.getDate());
+  if (target.getTime() <= now.getTime()) {
+    target = new Date(now.getFullYear() + 1, grad.getMonth(), grad.getDate());
+  }
+  const yearsSinceGrad = target.getFullYear() - grad.getFullYear();
+  return { target, yearsSinceGrad };
+}
 
-  const open = useCallback(() => {
-    if (opening) return;
-    setOpening(true);
-    setTimeout(() => {
-      setRevealed(true);
-      setOpening(false);
-    }, 550);
-  }, [opening]);
+function ReunionCountdown({ graduationDate }) {
+  const [now, setNow] = useState(() => Date.now());
+  const { lang, t } = useLang();
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const { target, yearsSinceGrad } = useMemo(() => getNextAnniversary(graduationDate), [graduationDate, /* refresh yearly */ Math.floor(now / 86400000 / 365)]);
+
+  const diff = Math.max(0, target.getTime() - now);
+  const days    = Math.floor(diff / 86400000);
+  const hours   = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+
+  const units = [
+    { value: days,    label: lang === "ja" ? "日" : "days" },
+    { value: hours,   label: lang === "ja" ? "時間" : "hrs" },
+    { value: minutes, label: lang === "ja" ? "分" : "min" },
+    { value: seconds, label: lang === "ja" ? "秒" : "sec" },
+  ];
 
   return (
-    <div style={{ textAlign:"center" }}>
-      {!revealed ? (
-        <div style={{
-          background:"rgba(255,255,255,0.76)", backdropFilter:"blur(20px)",
-          border:"1.5px dashed rgba(180,155,130,0.4)",
-          borderRadius:28, padding:"3rem 2rem",
-          transition:"transform 0.35s ease, opacity 0.35s ease",
-          transform: opening ? "scale(0.96)" : "scale(1)",
-          opacity:   opening ? 0.6 : 1,
-        }}>
-          <div aria-hidden="true" style={{ fontSize:50, marginBottom:16, animation:"float 3.5s ease-in-out infinite", display:"inline-block" }}>📮</div>
-          <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, fontWeight:700, color:"#1e1410", marginBottom:10, lineHeight:1.35 }}>
-            A letter from your past self
-          </h3>
-          <p style={{ fontSize:14, color:"#b0a090", marginBottom:26, lineHeight:1.7 }}>
-            Written on graduation day.<br />Open when you're ready.
-          </p>
-          <button
-            onClick={open}
-            disabled={opening}
-            style={{
-              background:"linear-gradient(135deg, #c4775a, #a85a3a)",
-              color:"white", border:"none", borderRadius:50,
-              padding:"14px 36px", fontSize:14.5, fontWeight:700,
-              boxShadow:"0 10px 28px rgba(196,119,90,0.38)", transition:"all 0.25s ease",
-              minHeight:48,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 14px 36px rgba(196,119,90,0.46)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(196,119,90,0.38)"; }}
-          >Open the capsule 📬</button>
-        </div>
-      ) : (
-        <div style={{ animation:"fadeIn 0.8s ease", textAlign:"left" }}>
-          {MEMORY_CAPSULE.map((msg, i) => {
-            const isLast = i === MEMORY_CAPSULE.length - 1;
-            return (
-              <div key={i} style={{
-                background: isLast ? "rgba(242,196,220,0.25)" : "rgba(255,255,255,0.78)",
-                backdropFilter:"blur(10px)",
-                border:      isLast ? "1px solid rgba(242,180,196,0.4)" : "1px solid rgba(230,218,205,0.7)",
-                borderRadius:18, padding:"1.25rem 1.5rem", marginBottom:10,
-                fontSize:    isLast ? 16.5 : 14.5, color:"#3a2e28", lineHeight:1.9,
-                fontStyle:   isLast ? "italic" : "normal",
-                fontFamily:  isLast ? "'Cormorant Garamond', Georgia, serif" : "inherit",
-                animation:  `fadeInUp 0.5s ease ${i * 0.18}s both`,
-              }}>
-                {isLast && <span aria-hidden="true" style={{ marginRight:8 }}>🌸</span>}
-                {msg}
-              </div>
-            );
-          })}
-          <div style={{ textAlign:"center", marginTop:18 }}>
-            <button
-              onClick={() => setRevealed(false)}
-              style={{
-                background:"transparent", color:"#c0b0a0",
-                border:"1px solid rgba(200,185,168,0.4)", borderRadius:50,
-                padding:"9px 24px", fontSize:13, fontWeight:500, transition:"all 0.2s",
-                minHeight:44,
-              }}
-            >Seal again ✦</button>
+    <div style={{
+      background: "rgba(255,255,255,0.78)", backdropFilter: "blur(14px)",
+      border: "1px solid rgba(230,218,205,0.7)", borderRadius: 22,
+      padding: "1.8rem 1.4rem", textAlign: "center",
+    }}>
+      <div aria-hidden="true" style={{ fontSize: 36, marginBottom: 10 }}>🎉</div>
+      <p style={{ fontSize: 13.5, color: "#a89888", marginBottom: 18, lineHeight: 1.6 }}>
+        {t("countdownAnniversary")(yearsSinceGrad)}
+      </p>
+      <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+        {units.map(u => (
+          <div key={u.label} style={{
+            background: "rgba(196,119,90,0.08)", border: "1px solid rgba(196,119,90,0.18)",
+            borderRadius: 14, padding: "0.8rem 1rem", minWidth: 66,
+          }}>
+            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#1e1410" }}>
+              {String(u.value).padStart(2, "0")}
+            </div>
+            <div style={{ fontSize: 10.5, color: "#a89888", fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" }}>
+              {u.label}
+            </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+      <p style={{ fontSize: 12, color: "#c0b0a0", fontStyle: "italic" }}>
+        {t("markCalendar")(target.toLocaleDateString(lang === "ja" ? "ja-JP" : undefined, { year: "numeric", month: "long", day: "numeric" }))}
+      </p>
     </div>
   );
 }
@@ -1424,6 +1733,7 @@ function TimeCapsule() {
 function RandomMemoryButton({ students }) {
   const [memory,   setMemory]   = useState(null);
   const [spinning, setSpinning] = useState(false);
+  const { t } = useLang();
 
   const pick = useCallback(() => {
     if (spinning) return;
@@ -1454,7 +1764,7 @@ function RandomMemoryButton({ students }) {
         onMouseLeave={e => { e.currentTarget.style.boxShadow = "var(--shadow-sm)"; e.currentTarget.style.transform = "none"; e.currentTarget.style.background = "rgba(255,255,255,0.88)"; }}
       >
         <span aria-hidden="true" style={{ fontSize:18, display:"inline-block", animation: spinning ? "spin 0.5s linear" : "heartbeat 2.5s ease-in-out infinite" }}>✦</span>
-        {spinning ? "Finding a memory…" : "Surface a random memory"}
+        {spinning ? t("randomMemorySpinning") : t("randomMemoryIdle")}
       </button>
 
       {memory && (
@@ -1499,8 +1809,9 @@ function computeCountdown() {
 
 function Countdown() {
   const [time, setTime] = useState(computeCountdown);
+  const { lang, t } = useLang();
   useEffect(() => {
-    const id = setInterval(() => setTime(computeCountdown()), 1000);
+    const id = setInterval(() => setTime(computeCountdown), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -1508,22 +1819,22 @@ function Countdown() {
     return (
       <div style={{ textAlign:"center" }}>
         <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:20, fontStyle:"italic", color:"#9a8070" }}>
-          Graduated {time.days} days ago 🌸
+          {t("graduatedAgo")(time.days)}
         </p>
-        <p style={{ fontSize:13, color:"#c0b0a0", marginTop:6 }}>The memories remain forever.</p>
+        <p style={{ fontSize:13, color:"#c0b0a0", marginTop:6 }}>{t("memoriesForever")}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <div style={{ fontSize:10, letterSpacing:3.5, color:"#c4a882", textTransform:"uppercase", textAlign:"center", marginBottom:16, fontWeight:700 }}>Until graduation</div>
+      <div style={{ fontSize:10, letterSpacing:3.5, color:"#c4a882", textTransform:"uppercase", textAlign:"center", marginBottom:16, fontWeight:700 }}>{t("untilGraduation")}</div>
       <div style={{ display:"flex", gap:16, justifyContent:"center" }}>
         {[
-          { label:"Days",  val: time.days  },
-          { label:"Hours", val: time.hours },
-          { label:"Mins",  val: time.mins  },
-          { label:"Secs",  val: time.secs  },
+          { label: lang === "ja" ? "日"  : "Days",  val: time.days  },
+          { label: lang === "ja" ? "時間" : "Hours", val: time.hours },
+          { label: lang === "ja" ? "分"  : "Mins",  val: time.mins  },
+          { label: lang === "ja" ? "秒"  : "Secs",  val: time.secs  },
         ].map(p => (
           <div key={p.label} style={{ textAlign:"center" }}>
             <div style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:42, fontWeight:700, color:"#1e1410", lineHeight:1, minWidth:52 }}>
@@ -1554,6 +1865,7 @@ function SectionHeading({ tag, title, sub }) {
 // ─── LOADING SCREEN ────────────────────────────────────────────────────────────
 
 function LoadingScreen({ progress, msg }) {
+  const { lang } = useLang();
   return (
     <div
       role="progressbar"
@@ -1571,7 +1883,7 @@ function LoadingScreen({ progress, msg }) {
       <style>{GLOBAL_CSS}</style>
       <div aria-hidden="true" style={{ fontSize:44, marginBottom:20, animation:"float 2.2s ease-in-out infinite", display:"inline-block" }}>🌸</div>
       <div style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#3a2e28", marginBottom:6, textAlign:"center", fontWeight:700 }}>
-        {CLASS_DATA.school}
+        {lang === "ja" ? CLASS_DATA.schoolJa : CLASS_DATA.school}
       </div>
       <div style={{ fontSize:11, color:"#c0b0a0", marginBottom:42, letterSpacing:4, textTransform:"uppercase", fontWeight:700 }}>{CLASS_DATA.year}</div>
       <div style={{ width:200, marginBottom:14 }}>
@@ -1592,6 +1904,7 @@ function LoadingScreen({ progress, msg }) {
 // ─── BOTTOM NAV ────────────────────────────────────────────────────────────────
 
 function BottomNav({ activeSection, onNav }) {
+  const { lang } = useLang();
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Mobile navigation">
       <div className="bottom-nav-inner">
@@ -1601,10 +1914,10 @@ function BottomNav({ activeSection, onNav }) {
             className={`bottom-nav-btn${activeSection === item.id ? " active" : ""}`}
             onClick={() => onNav(item.id)}
             aria-current={activeSection === item.id ? "location" : undefined}
-            aria-label={item.label}
+            aria-label={lang === "ja" ? item.labelJa : item.label}
           >
             <span className="bn-icon">{item.icon}</span>
-            <span className="bn-label">{item.label}</span>
+            <span className="bn-label">{lang === "ja" ? item.labelJa : item.label}</span>
           </button>
         ))}
       </div>
@@ -1625,6 +1938,84 @@ function ScrollToTop({ visible }) {
   );
 }
 
+// ─── LANGUAGE PICKER ───────────────────────────────────────────────────────────
+
+function LanguagePicker({ onPick }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Choose your language / 言語を選択してください"
+      style={{
+        position:"fixed", inset:0, zIndex:2000,
+        background:"linear-gradient(145deg, #faf7f2 0%, #f5efe4 50%, #ede4f0 100%)",
+        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+        padding:"2rem", textAlign:"center",
+        animation:"fadeIn 0.4s ease",
+      }}
+    >
+      <style>{GLOBAL_CSS}</style>
+      <div aria-hidden="true" style={{ fontSize:46, marginBottom:18, animation:"float 2.2s ease-in-out infinite", display:"inline-block" }}>🌸</div>
+      <h1 style={{
+        fontFamily:"'Cormorant Garamond', Georgia, serif", fontWeight:700,
+        fontSize:"clamp(26px,5vw,38px)", color:"#1e1410", marginBottom:10, lineHeight:1.2,
+      }}>Welcome! / ようこそ！</h1>
+      <p style={{ fontSize:13.5, color:"#8a7060", marginBottom:36, maxWidth:340 }}>
+        Please choose your language to continue.<br />言語を選択して続けてください。
+      </p>
+      <div style={{ display:"flex", gap:16, flexWrap:"wrap", justifyContent:"center" }}>
+        <button
+          className="lang-pick-btn"
+          onClick={() => onPick("en")}
+          style={{
+            background:"#fff", border:"1.5px solid rgba(196,119,90,0.35)",
+            borderRadius:24, padding:"1.4rem 2.2rem", minWidth:150,
+            boxShadow:"var(--shadow-sm)", display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+          }}
+        >
+          <span style={{ fontSize:30 }} aria-hidden="true">🇬🇧</span>
+          <span style={{ fontSize:15, fontWeight:700, color:"#1e1410" }}>English</span>
+        </button>
+        <button
+          className="lang-pick-btn"
+          onClick={() => onPick("ja")}
+          style={{
+            background:"#fff", border:"1.5px solid rgba(196,119,90,0.35)",
+            borderRadius:24, padding:"1.4rem 2.2rem", minWidth:150,
+            boxShadow:"var(--shadow-sm)", display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+          }}
+        >
+          <span style={{ fontSize:30 }} aria-hidden="true">🇯🇵</span>
+          <span style={{ fontSize:15, fontWeight:700, color:"#1e1410" }}>日本語</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── LANGUAGE TOGGLE BUTTON ─────────────────────────────────────────────────────
+
+function LangToggle({ style }) {
+  const { lang, setLang, t } = useLang();
+  return (
+    <button
+      onClick={() => setLang(lang === "ja" ? "en" : "ja")}
+      aria-label={t("changeLanguage")}
+      style={{
+        background:"rgba(255,255,255,0.85)", backdropFilter:"blur(10px)",
+        border:"1px solid rgba(196,119,90,0.3)", borderRadius:50,
+        padding:"6px 13px", fontSize:12, fontWeight:700, color:"var(--accent)",
+        display:"flex", alignItems:"center", gap:5, cursor:"pointer",
+        minHeight:32,
+        ...style,
+      }}
+    >
+      <span aria-hidden="true" style={{ fontSize:13 }}>🌐</span>
+      {lang === "ja" ? "EN" : "日本語"}
+    </button>
+  );
+}
+
 // ─── MAIN APP ──────────────────────────────────────────────────────────────────
 
 export default function Yearbook() {
@@ -1637,9 +2028,42 @@ export default function Yearbook() {
   const [navScrolled,     setNavScrolled]     = useState(false);
   const [showScrollTop,   setShowScrollTop]   = useState(false);
   const [searchQuery,     setSearchQuery]     = useState("");
+  const [lang,            setLangState]       = useState(() => {
+    try { return localStorage.getItem("yearbook_lang"); } catch { return null; }
+  });
   const isMobile = useIsMobile();
 
+  const setLang = useCallback((next) => {
+    setLangState(next);
+    try { localStorage.setItem("yearbook_lang", next); } catch {}
+  }, []);
+
+  const t = useCallback((key) => (STRINGS[lang || "en"][key] ?? STRINGS.en[key]), [lang]);
+  const langCtx = useMemo(() => ({ lang: lang || "en", t, setLang }), [lang, t, setLang]);
+
+  // Students with role/dream/memory/country translated for the active language
+  const students = useMemo(() => STUDENTS.map(s => trStudent(s, lang)), [lang]);
+
   const sectionsRef = useRef({});
+  const heroRef = useRef(null);
+  const spotlightRef = useRef(null);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const el = heroRef.current;
+    if (!el) return;
+    const handleMove = (e) => {
+      const rect = el.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      if (spotlightRef.current) {
+        spotlightRef.current.style.background =
+          `radial-gradient(480px circle at ${x}% ${y}%, rgba(196,119,90,0.16), transparent 70%)`;
+      }
+    };
+    el.addEventListener("mousemove", handleMove);
+    return () => el.removeEventListener("mousemove", handleMove);
+  }, [isMobile]);
 
   useEffect(() => {
     let prog = 0;
@@ -1682,37 +2106,39 @@ export default function Yearbook() {
   }, []);
 
   const filteredStudents = useMemo(
-    () => selectedCountry ? STUDENTS.filter(s => s.country === selectedCountry) : STUDENTS,
-    [selectedCountry]
+    () => selectedCountry ? students.filter(s => s.country === selectedCountry) : students,
+    [selectedCountry, students]
   );
 
   const searchedStudents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return STUDENTS;
-    return STUDENTS.filter(s =>
+    if (!q) return students;
+    return students.filter(s =>
       s.name.toLowerCase().includes(q)    ||
       s.country.toLowerCase().includes(q) ||
       s.role.toLowerCase().includes(q)    ||
       s.dream.toLowerCase().includes(q)
     );
-  }, [searchQuery]);
+  }, [searchQuery, students]);
 
   const selectedIdx = useMemo(
-    () => selectedStudent ? STUDENTS.findIndex(s => s.id === selectedStudent.id) : -1,
-    [selectedStudent]
+    () => selectedStudent ? students.findIndex(s => s.id === selectedStudent.id) : -1,
+    [selectedStudent, students]
   );
   const openNext = useCallback(() => {
     if (selectedIdx < 0) return;
-    setSelectedStudent(STUDENTS[(selectedIdx + 1) % STUDENTS.length]);
-  }, [selectedIdx]);
+    setSelectedStudent(students[(selectedIdx + 1) % students.length]);
+  }, [selectedIdx, students]);
   const openPrev = useCallback(() => {
     if (selectedIdx < 0) return;
-    setSelectedStudent(STUDENTS[(selectedIdx - 1 + STUDENTS.length) % STUDENTS.length]);
-  }, [selectedIdx]);
+    setSelectedStudent(students[(selectedIdx - 1 + students.length) % students.length]);
+  }, [selectedIdx, students]);
 
   if (loading) return <LoadingScreen progress={loadProgress} msg={loadMsg} />;
+  if (!lang) return <LangContext.Provider value={langCtx}><LanguagePicker onPick={setLang} /></LangContext.Provider>;
 
   return (
+    <LangContext.Provider value={langCtx}>
     <div style={{ fontFamily:"'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", minHeight:"100vh", color:"var(--text)" }}>
       <style>{GLOBAL_CSS}</style>
 
@@ -1728,6 +2154,7 @@ export default function Yearbook() {
           padding:"0 2rem", height:"var(--nav-h)",
           display:"flex", alignItems:"center", justifyContent:"space-between",
           transition:"background 0.3s ease, border-color 0.3s ease",
+          gap:10,
         }}
       >
         <button
@@ -1738,10 +2165,11 @@ export default function Yearbook() {
             fontFamily:"'Cormorant Garamond', Georgia, serif",
             fontSize:16, fontWeight:700, color:"#1e1410",
             display:"flex", alignItems:"center", gap:8, cursor:"pointer",
+            flexShrink:0,
           }}
         >
           <span aria-hidden="true" style={{ fontSize:18 }}>🌸</span>
-          <span>Class 3B · {CLASS_DATA.year}</span>
+          <span>{lang === "ja" ? CLASS_DATA.classJa : CLASS_DATA.class} · {CLASS_DATA.year}</span>
         </button>
 
         <div className="desktop-nav-links" style={{ display:"flex", gap:2 }}>
@@ -1751,24 +2179,27 @@ export default function Yearbook() {
               onClick={() => scrollTo(item.id)}
               className={`nav-pill${activeSection === item.id ? " active" : ""}`}
               aria-current={activeSection === item.id ? "location" : undefined}
-            >{item.label}</button>
+            >{lang === "ja" ? item.labelJa : item.label}</button>
           ))}
         </div>
 
-        <div className="desktop-pill" style={{
-          background:"rgba(196,119,90,0.1)",
-          border:"1px solid rgba(196,119,90,0.3)",
-          borderRadius:50, padding:"6px 15px",
-          fontSize:11.5, color:"var(--accent)", fontWeight:700, letterSpacing:0.3,
-          display:"flex", alignItems:"center", gap:5,
-        }}>
-          <span aria-hidden="true">🌸</span> Class of 2025
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+          <div className="desktop-pill" style={{
+            background:"rgba(196,119,90,0.1)",
+            border:"1px solid rgba(196,119,90,0.3)",
+            borderRadius:50, padding:"6px 15px",
+            fontSize:11.5, color:"var(--accent)", fontWeight:700, letterSpacing:0.3,
+            display:"flex", alignItems:"center", gap:5,
+          }}>
+            <span aria-hidden="true">🌸</span> {t("classOf")}
+          </div>
+          <LangToggle />
         </div>
       </nav>
 
       {/* ── HERO ── */}
       <section
-        ref={el => { sectionsRef.current.home = el; }}
+        ref={el => { sectionsRef.current.home = el; heroRef.current = el; }}
         id="home"
         aria-labelledby="hero-heading"
         className="hero-pad"
@@ -1780,13 +2211,25 @@ export default function Yearbook() {
           padding:"76px 2rem 4rem", textAlign:"center",
         }}
       >
+        {/* Cursor-following spotlight glow — desktop only, mutated directly via ref (no re-renders) */}
+        {!isMobile && (
+          <div
+            ref={spotlightRef}
+            aria-hidden="true"
+            style={{
+              position:"absolute", inset:0, zIndex:1, pointerEvents:"none",
+              background:"radial-gradient(480px circle at 50% 30%, rgba(196,119,90,0.16), transparent 70%)",
+            }}
+          />
+        )}
+
         {/* Only render petals on non-mobile for performance */}
         {!isMobile && PETALS.map((p, i) => <SakuraPetal key={i} style={p} />)}
         {!isMobile && ORBS.map((o, i)   => <FloatingOrb key={i} style={o} />)}
 
         <div style={{ position:"relative", zIndex:2, animation:"fadeInUp 1s ease 0.15s both", maxWidth:680 }}>
           <div style={{ fontSize:11, letterSpacing:5.5, color:"var(--accent)", textTransform:"uppercase", marginBottom:28, fontWeight:700 }}>
-            {CLASS_DATA.city} · {CLASS_DATA.year}
+            {lang === "ja" ? CLASS_DATA.cityJa : CLASS_DATA.city} · {CLASS_DATA.year}
           </div>
 
           <h1
@@ -1798,14 +2241,14 @@ export default function Yearbook() {
               fontWeight:700, color:"#1a1008", lineHeight:0.9,
               margin:"0 0 14px", letterSpacing:-2,
             }}
-          >Class 3B</h1>
+          >{lang === "ja" ? CLASS_DATA.classJa : CLASS_DATA.class}</h1>
 
           <h2 style={{
             fontFamily:"'Cormorant Garamond', Georgia, serif",
             fontSize:"clamp(15px,2.8vw,22px)",
             fontWeight:400, fontStyle:"italic", color:"#8a7060",
             margin:"0 0 44px",
-          }}>{CLASS_DATA.school}</h2>
+          }}>{lang === "ja" ? CLASS_DATA.schoolJa : CLASS_DATA.school}</h2>
 
           <div style={{
             display:"inline-block",
@@ -1821,7 +2264,7 @@ export default function Yearbook() {
           </div>
 
           <div className="hero-avatars" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
-            {STUDENTS.slice(0, 8).map((s, i) => (
+            {students.slice(0, 8).map((s, i) => (
               <div key={s.id} style={{ marginLeft: i > 0 ? -14 : 0, zIndex: 8 - i }}>
                 <Avatar student={s} size={36} />
               </div>
@@ -1836,7 +2279,7 @@ export default function Yearbook() {
           </div>
 
           <p className="hero-sub-text" style={{ fontSize:13, color:"#b0a090", letterSpacing:0.5, fontWeight:500, marginBottom:36 }}>
-            20 students · 8 countries · 1 unforgettable year
+            {t("heroTagline")}
           </p>
 
           <div style={{
@@ -1853,7 +2296,7 @@ export default function Yearbook() {
           position:"absolute", bottom:30, left:"50%", transform:"translateX(-50%)",
           animation:"floatSlow 2.8s ease-in-out infinite", zIndex:2,
         }}>
-          <div style={{ fontSize:10, color:"#d4c4b0", letterSpacing:3.5, textTransform:"uppercase", marginBottom:5, fontWeight:700 }}>Scroll</div>
+          <div style={{ fontSize:10, color:"#d4c4b0", letterSpacing:3.5, textTransform:"uppercase", marginBottom:5, fontWeight:700 }}>{t("scrollHint")}</div>
           <div style={{ fontSize:14, color:"#d4c4b0", textAlign:"center" }}>↓</div>
         </div>
       </section>
@@ -1867,9 +2310,9 @@ export default function Yearbook() {
         style={{ padding:"6rem 2rem 4rem", maxWidth:1340, margin:"0 auto" }}
       >
         <SectionHeading
-          tag="Our Class"
-          title="Classmates"
-          sub="From across Asia, brought together by Japanese and kept together by friendship. Tap any card to see their story."
+          tag={t("classmatesTag")}
+          title={t("classmatesTitle")}
+          sub={t("classmatesSub")}
         />
 
         <div style={{ display:"flex", justifyContent:"center", marginBottom:"2.5rem" }}>
@@ -1882,7 +2325,7 @@ export default function Yearbook() {
               type="search"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by name, country, or role…"
+              placeholder={t("searchPlaceholder")}
               aria-label="Search classmates"
               className="search-input"
               style={{ paddingLeft:42 }}
@@ -1894,12 +2337,12 @@ export default function Yearbook() {
           <div style={{ textAlign:"center", padding:"3rem 0", color:"var(--text-muted)" }}>
             <div style={{ fontSize:40, marginBottom:12 }}>🌸</div>
             <p style={{ fontSize:15, fontFamily:"'Cormorant Garamond', Georgia, serif", fontStyle:"italic" }}>
-              No classmates match "{searchQuery}"
+              {t("noMatch")(searchQuery)}
             </p>
             <button
               onClick={() => setSearchQuery("")}
               style={{ marginTop:14, background:"none", border:"1px solid rgba(200,185,168,0.5)", borderRadius:50, padding:"8px 20px", fontSize:13, color:"var(--text-soft)", cursor:"pointer", minHeight:40 }}
-            >Clear search</button>
+            >{t("clearSearch")}</button>
           </div>
         ) : (
           <div className="masonry-grid">
@@ -1910,6 +2353,22 @@ export default function Yearbook() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* ── CONSTELLATION ── */}
+      <section
+        ref={el => { sectionsRef.current.constellation = el; }}
+        id="constellation"
+        aria-labelledby="constellation-heading"
+        className="section-pad"
+        style={{ padding:"6rem 1.2rem 5rem", maxWidth:1100, margin:"0 auto" }}
+      >
+        <SectionHeading
+          tag={t("constellationTag")}
+          title={t("constellationTitle")}
+          sub={t("constellationSub")}
+        />
+        <ClassConstellation students={students} onSelect={setSelectedStudent} />
       </section>
 
       {/* ── WORLD ── */}
@@ -1925,12 +2384,12 @@ export default function Yearbook() {
       >
         <div style={{ maxWidth:1120, margin:"0 auto" }}>
           <SectionHeading
-            tag="Where We Come From"
-            title="A World in One Classroom"
-            sub="Every seat held a different story. Every voice added a new color to our shared year."
+            tag={t("worldTag")}
+            title={t("worldTitle")}
+            sub={t("worldSub")}
           />
 
-          <WorldSection students={STUDENTS} onSelectCountry={setSelectedCountry} selectedCountry={selectedCountry} />
+          <WorldSection students={students} onSelectCountry={setSelectedCountry} selectedCountry={selectedCountry} />
 
           <div className="world-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(195px, 1fr))", gap:11 }}>
             {filteredStudents.map((s, i) => (
@@ -1970,9 +2429,9 @@ export default function Yearbook() {
         style={{ padding:"7rem 2rem 5rem", maxWidth:1340, margin:"0 auto" }}
       >
         <SectionHeading
-          tag="Photo Memories"
-          title="Polaroid Gallery"
-          sub="Hover to relive the moment. Every photo holds a story only we know."
+          tag={t("galleryTag")}
+          title={t("galleryTitle")}
+          sub={t("gallerySub")}
         />
         <div
           className="gallery-grid"
@@ -1998,39 +2457,32 @@ export default function Yearbook() {
         }}
       >
         <div style={{ maxWidth:840, margin:"0 auto" }}>
-          <SectionHeading tag="Memories & Moments" title="Things We'll Never Forget" />
+          <SectionHeading tag={t("memoriesTag")} title={t("memoriesTitle")} />
 
           <div style={{ marginBottom:"4.5rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:"1.5rem", textAlign:"center", fontWeight:600 }}>
-              Random Memory
+              {t("randomMemoryHeading")}
             </h3>
-            <RandomMemoryButton students={STUDENTS} />
+            <RandomMemoryButton students={students} />
           </div>
 
           <div style={{ marginBottom:"4.5rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:"1.5rem", textAlign:"center", fontWeight:600 }}>
-              Class Quotes
+              {t("classQuotesHeading")}
             </h3>
             <div className="quote-grid" style={{ display:"grid", gap:12 }}>
               {FUNNY_QUOTES.map((q, i) => <QuoteCard key={i} item={q} index={i} />)}
             </div>
           </div>
 
-          <div style={{ marginBottom:"4.5rem" }}>
+          <div style={{ marginBottom:"2rem" }}>
             <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:8, textAlign:"center", fontWeight:600 }}>
-              Anonymous Friendship Notes
+              {t("nextReunionHeading")}
             </h3>
             <p style={{ fontSize:13, color:"#c0b0a0", textAlign:"center", marginBottom:"1.5rem", fontStyle:"italic" }}>
-              Leave a note without revealing who you are.
+              {t("nextReunionSub")}
             </p>
-            <AnonymousMessages />
-          </div>
-
-          <div style={{ marginBottom:"2rem" }}>
-            <h3 style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:24, color:"#2d2420", marginBottom:"1.5rem", textAlign:"center", fontWeight:600 }}>
-              Time Capsule
-            </h3>
-            <TimeCapsule />
+            <ReunionCountdown graduationDate={CLASS_DATA.graduationDate} />
           </div>
         </div>
       </section>
@@ -2055,16 +2507,17 @@ export default function Yearbook() {
           border:"1px solid rgba(215,200,185,0.4)", borderRadius:50, padding:"10px 22px", marginBottom:24,
         }}>
           <span aria-hidden="true" style={{ fontSize:16 }}>🌸</span>
-          <span style={{ fontSize:12, color:"#8a7060", letterSpacing:1.5, fontWeight:700 }}>{CLASS_DATA.school}</span>
+          <span style={{ fontSize:12, color:"#8a7060", letterSpacing:1.5, fontWeight:700 }}>{lang === "ja" ? CLASS_DATA.schoolJa : CLASS_DATA.school}</span>
         </div>
 
         <div style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:"clamp(26px,5.5vw,42px)", marginBottom:6, color:"#1e1410", fontWeight:700 }}>
-          Class 3B · 2024–2025
+          {lang === "ja" ? CLASS_DATA.classJa : CLASS_DATA.class} · {CLASS_DATA.year}
         </div>
-        <div style={{ fontSize:13.5, color:"#b4a494", marginBottom:30, fontWeight:500 }}>{CLASS_DATA.city}</div>
+        <div style={{ fontSize:13.5, color:"#b4a494", marginBottom:6, fontWeight:500 }}>{lang === "ja" ? CLASS_DATA.cityJa : CLASS_DATA.city}</div>
+        <div style={{ fontSize:12, color:"#c4b4a4", marginBottom:30, fontWeight:500, fontStyle:"italic" }}>{lang === "ja" ? CLASS_DATA.durationJa : CLASS_DATA.duration}</div>
 
         <div aria-label="All classmates" style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"4px 8px", maxWidth:720, margin:"0 auto 34px" }}>
-          {STUDENTS.map((s, i) => (
+          {students.map((s, i) => (
             <span key={s.id} style={{ fontSize:12, color:"#9a8878", display:"inline-flex", alignItems:"center", gap:4, fontWeight:500 }}>
               {i > 0 && <span aria-hidden="true" style={{ color:"#e0d5c4", margin:"0 2px" }}>·</span>}
               <span aria-hidden="true">{s.flag}</span>{s.name.split(" ")[0]}
@@ -2073,7 +2526,7 @@ export default function Yearbook() {
         </div>
 
         <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:18, fontStyle:"italic", color:"#c4b4a0", lineHeight:1.65, maxWidth:480, margin:"0 auto 20px" }}>
-          {CLASS_DATA.timeCapsula}
+          {lang === "ja" ? CLASS_DATA.timeCapsulaJa : CLASS_DATA.timeCapsula}
         </p>
 
         <div aria-hidden="true" style={{ fontSize:24, marginBottom:10, animation:"heartbeat 2.5s ease-in-out infinite", display:"inline-block" }}>🌸</div>
@@ -2096,5 +2549,6 @@ export default function Yearbook() {
         />
       )}
     </div>
+    </LangContext.Provider>
   );
 }
