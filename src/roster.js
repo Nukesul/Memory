@@ -9,7 +9,7 @@ export const ROSTER = [
   R(5, 'Anjery Putri', 'ID', ['anjeri1', 'anjeri']),
   R(6, 'Nabira Salsabila', 'ID', ['nabi']),
   R(7, 'Chacha Maharani', 'ID', ['chacha']),
-  R(8, 'Hieu Nguyen', 'VN'),
+  R(8, 'Nyamu San', 'MN'),
   R(9, 'Aun Tran', 'VN', ['aun']),
   R(10, 'Otchini Perera', 'LK', ['ochi']),
   R(11, 'Rukumaru Silva', 'LK', ['ruku']),
@@ -25,7 +25,7 @@ export const ROSTER = [
 ];
 
 // Seat order on the classroom board: grouped by country.
-export const SEATING = [1, 2, 3, 4, 5, 6, 7, 13, 8, 9, 10, 11, 12, 14, 20, 15, 16, 17, 18, 19];
+export const SEATING = [1, 2, 3, 4, 5, 6, 7, 13, 9, 10, 11, 12, 14, 20, 15, 16, 17, 18, 8, 19];
 
 export const byId = (id) => ROSTER.find((p) => p.id === Number(id));
 

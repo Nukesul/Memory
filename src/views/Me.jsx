@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../app-context';
 import { COUNTRY_ORDER, FIELDS, FUN_FIELDS, MAX_PHOTOS } from '../config';
-import { matchNames } from '../roster';
+import { byId, matchNames } from '../roster';
 import { sampleFor } from '../samples';
-import { asset, completion } from '../people';
+import { asset, buildPerson, completion } from '../people';
 import { processImage } from '../image';
 import { href } from '../router';
 import { ls } from '../store';
@@ -99,6 +99,7 @@ function Login() {
 /* ───────────── Editor: the cabinet ───────────── */
 function Editor({ p }) {
   const { t, lang, country, logout, saveProfile, uploadPhoto, removePhoto, toast, cloud } = useApp();
+  const [confirmReset, setConfirmReset] = useState(false);
   const draftKey = `memoris:draft:${p.id}`;
   const sample = sampleFor(p.id, lang);
 
@@ -208,11 +209,44 @@ function Editor({ p }) {
   };
   const setCaption = (i, cap) => change((d) => ({ photos: d.photos.map((ph, k) => (k === i ? { ...ph, cap } : ph)) }));
 
+  const pageLink = `${location.origin}${location.pathname}#/p/${p.id}`;
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(pageLink);
+      toast(t('link_copied'));
+    } catch {
+      toast(pageLink);
+    }
+  };
+  const downloadData = () => {
+    const out = { name: shownName, country: shownCountry, ...latest.current };
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+    a.download = `2J-${shownName.replace(/\s+/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  const resetAll = () => {
+    if (!confirmReset) return setConfirmReset(true);
+    [latest.current.avatar, ...(latest.current.photos || [])].filter((x) => x && !x.seed).forEach((x) => removePhoto(x).catch(() => {}));
+    const fresh = buildPerson(byId(p.id), null);
+    const next = { avatar: fresh.avatar, photos: fresh.photos };
+    latest.current = next;
+    setDraft(next);
+    dirty.current = true;
+    setStatus('dirty');
+    setConfirmReset(false);
+    flush();
+    toast(t('reset_done'));
+  };
+
   const prog = completion(draft);
   const checkLabels = ['c_photo', 'c_dream', 'c_memory', 'c_quote', 'c_message', 'c_photos', 'c_fun'];
   const shownName = (draft.name || '').trim() || p.baseName;
   const shownCountry = draft.country || p.baseCountry;
-  const live = { ...p, name: shownName, country: shownCountry };
+  const live = { ...p, name: shownName, country: shownCountry, avatarY: draft.avatarY ?? p.avatarY };
   const photos = draft.photos || [];
   const statusText = { idle: '', dirty: t('st_dirty'), saving: t('st_saving'), saved: t('st_saved'), error: t('st_error') }[status];
 
@@ -294,6 +328,12 @@ function Editor({ p }) {
                   <input type="file" accept="image/*" hidden onChange={(e) => { addFiles(e.target.files, 'avatar'); e.target.value = ''; }} />
                 </label>
                 <p className="hint">{t('portrait_hint')}</p>
+                {draft.avatar && (
+                  <label className="range">
+                    <span>{t('f_avatarY')}</span>
+                    <input type="range" min="0" max="100" step="5" value={draft.avatarY ?? p.avatarY ?? 20} onChange={(e) => change({ avatarY: Number(e.target.value) })} />
+                  </label>
+                )}
               </div>
             </div>
           </fieldset>
@@ -357,6 +397,18 @@ function Editor({ p }) {
           <button className="btn btn-big" type="submit" disabled={status === 'saving'}>
             {t('save_now')}
           </button>
+
+          <div className="cab-tools">
+            <button type="button" className="btn btn-small btn-ghost" onClick={copyLink}>
+              <Icon name="link" size={16} /> {t('copy_link')}
+            </button>
+            <button type="button" className="btn btn-small btn-ghost" onClick={downloadData}>
+              <Icon name="download" size={16} /> {t('download_data')}
+            </button>
+            <button type="button" className={`btn btn-small ${confirmReset ? 'btn-danger' : 'btn-ghost'}`} onClick={resetAll} onBlur={() => setConfirmReset(false)}>
+              <Icon name="trash" size={16} /> {confirmReset ? t('reset_confirm') : t('reset_page')}
+            </button>
+          </div>
         </form>
 
         <aside className="cab-preview" aria-label={t('tab_preview')}>

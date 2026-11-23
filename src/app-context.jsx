@@ -91,6 +91,7 @@ export function AppProvider({ children }) {
     setMeId(null);
   };
   const me = people.find((p) => p.id === meId) || null;
+  const person = useCallback((id) => people.find((p) => p.id === Number(id)) || null, [people]);
 
   // ── toasts ──
   const [toasts, setToasts] = useState([]);
@@ -177,6 +178,23 @@ export function AppProvider({ children }) {
     const edited_at = await api.editMessage(id, text.trim());
     setChat((l) => l.map((m) => (m.id === id ? { ...m, text: text.trim(), edited_at } : m)));
   };
+  const reactMessage = async (id, emoji) => {
+    const msg = chat.find((m) => m.id === id);
+    if (!msg) return;
+    const cur = { ...(msg.reactions || {}) };
+    const list = new Set(cur[emoji] || []);
+    if (list.has(meId)) list.delete(meId);
+    else list.add(meId);
+    if (list.size) cur[emoji] = [...list];
+    else delete cur[emoji];
+    setChat((l) => l.map((m) => (m.id === id ? { ...m, reactions: cur } : m)));
+    try {
+      await api.reactMessage(id, cur);
+    } catch (e) {
+      setChat((l) => l.map((m) => (m.id === id ? msg : m)));
+      throw e;
+    }
+  };
   const deleteMessage = async (id) => {
     await api.deleteMessage(id);
     setChat((l) => l.filter((m) => m.id !== id));
@@ -199,9 +217,9 @@ export function AppProvider({ children }) {
   };
 
   const value = {
-    vote, chat, unread, refreshChat, setChatFast, markSeen, sendMessage, editMessage, deleteMessage,
+    vote, chat, unread, reactMessage, refreshChat, setChatFast, markSeen, sendMessage, editMessage, deleteMessage,
     lang, setLang, t, country, theme, toggleTheme,
-    state, people, refresh, meId, me, login, logout,
+    state, people, person, refresh, meId, me, login, logout,
     toasts, toast, box, openPhotos, closePhotos,
     saveProfile, uploadPhoto: api.uploadPhoto, removePhoto: api.removePhoto, addNote, deleteNote,
     cloud: CLOUD,

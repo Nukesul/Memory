@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AppProvider, useApp } from './app-context';
+import { CLASS } from './config';
 import { useRoute, href } from './router';
 import { Icon } from './components/Icons';
 import { Avatar } from './components/Avatar';
@@ -12,12 +13,14 @@ import Wall from './views/Wall';
 import Me from './views/Me';
 import Chat from './views/Chat';
 import Play from './views/Play';
+import Book from './views/Book';
+import Help from './views/Help';
+import NotFound from './views/NotFound';
 
 const NAV = [
   { to: '', icon: 'home', key: 'nav_home', match: ['', undefined] },
   { to: 'people', icon: 'people', key: 'nav_people', match: ['people', 'p'] },
-  { to: 'gallery', icon: 'photo', key: 'nav_gallery', match: ['gallery'], hideMobile: true },
-  { to: 'wall', icon: 'note', key: 'nav_wall', match: ['wall'], hideMobile: true },
+  { to: 'gallery', icon: 'photo', key: 'nav_album', match: ['gallery', 'wall', 'book'] },
   { to: 'chat', icon: 'chat', key: 'nav_chat', match: ['chat'], badge: true },
   { to: 'play', icon: 'game', key: 'nav_play', match: ['play'] },
   { to: 'me', icon: 'user', key: 'nav_me', match: ['me'] },
@@ -29,6 +32,10 @@ function Shell() {
   useEffect(() => {
     document.documentElement.style.setProperty('--banner', cloud ? '0px' : '56px');
   }, [cloud]);
+  useEffect(() => {
+    const key = { people: 'nav_people', p: 'nav_people', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book', chat: 'nav_chat', play: 'play_title', me: 'nav_me', help: 'help_title' }[section];
+    document.title = `${key ? t(key) + ' · ' : ''}Class 2J · Memoris`;
+  }, [section, t]);
   const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
 
   let view;
@@ -52,6 +59,9 @@ function Shell() {
   else if (section === 'me') view = <Me />;
   else if (section === 'chat') view = <Chat room={arg} />;
   else if (section === 'play') view = <Play tab={arg} />;
+  else if (section === 'book') view = <Book />;
+  else if (section === 'help') view = <Help />;
+  else if (section && section !== 'home') view = <NotFound />;
   else view = <Home />;
 
   return (
@@ -104,8 +114,17 @@ function Shell() {
         {view}
       </main>
 
+      <footer className="site-foot">
+        <p>
+          <b>{CLASS.name}</b> · {CLASS.school} · {lang === 'ja' ? CLASS.cityJa : CLASS.city}
+        </p>
+        <p>
+          <a href={href('help')}>{t('help_title')}</a> · <a href={href('book')}>{t('tab_book')}</a> · <a href={href('play')}>{t('nav_play')}</a>
+        </p>
+      </footer>
+
       <nav className="tabbar" aria-label="Main">
-        {NAV.filter((n) => !n.hideMobile).map((n) => (
+        {NAV.map((n) => (
           <a key={n.to} href={href(n.to)} aria-current={n.match.includes(section) ? 'page' : undefined}>
             <Icon name={n.icon} />
             {n.badge && unreadTotal > 0 && <span className="badge dot">{unreadTotal}</span>}

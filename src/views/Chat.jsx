@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../app-context';
 import { href } from '../router';
 import { firstName } from '../roster';
@@ -7,6 +7,16 @@ import { Flag } from '../components/Flag';
 import { Icon } from '../components/Icons';
 
 const MAX = 500;
+const EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+const dayLabel = (lang, iso, t) => {
+  const d = new Date(iso);
+  const today = new Date();
+  const yest = new Date(today.getTime() - 864e5);
+  if (d.toDateString() === today.toDateString()) return t('chat_today');
+  if (d.toDateString() === yest.toDateString()) return t('chat_yesterday');
+  return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long' }).format(d);
+};
 
 export default function Chat({ room: arg }) {
   const { t, me } = useApp();
@@ -99,7 +109,7 @@ const timeFmt = (lang, iso) => {
 };
 
 function Thread({ room, me, people, markSeen }) {
-  const { t, lang, chat, sendMessage, editMessage, deleteMessage, toast } = useApp();
+  const { t, lang, chat, sendMessage, editMessage, deleteMessage, reactMessage, toast } = useApp();
   const toId = room === 'all' ? null : Number(room);
   const other = toId ? people.find((p) => p.id === toId) : null;
   const msgs = useMemo(
@@ -112,6 +122,15 @@ function Thread({ room, me, people, markSeen }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null); // { id, text }
   const [confirm, setConfirm] = useState(null);
+  const [picker, setPicker] = useState(null);
+  const react = async (id, emoji) => {
+    setPicker(null);
+    try {
+      await reactMessage(id, emoji);
+    } catch {
+      toast(t('chat_err'), 'err');
+    }
+  };
   const box = useRef(null);
   const stick = useRef(true);
 
@@ -204,8 +223,12 @@ function Thread({ room, me, people, markSeen }) {
           const prev = msgs[i - 1];
           const grouped = prev && prev.from_id === m.from_id && new Date(m.created_at) - new Date(prev.created_at) < 5 * 60000;
           const isEditing = editing?.id === m.id;
+          const newDay = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
+          const rx = Object.entries(m.reactions || {}).filter(([, ids]) => ids.length);
           return (
-            <div key={m.id} className={`msg ${mine ? 'mine' : ''} ${grouped ? 'grouped' : ''}`}>
+            <Fragment key={m.id}>
+              {newDay && <div className="day-sep"><span>{dayLabel(lang, m.created_at, t)}</span></div>}
+            <div className={`msg ${mine ? 'mine' : ''} ${grouped && !newDay ? 'grouped' : ''}`}>
               {!mine && !grouped ? <Avatar p={from} className="mini round" /> : !mine && <span className="mini-gap" />}
               <div className="msg-col">
                 {!mine && !grouped && !other && <small className="msg-name">{from ? firstName(from.name) : '?'}</small>}
@@ -233,9 +256,30 @@ function Thread({ room, me, people, markSeen }) {
                 ) : (
                   <div className="bubble">{m.text}</div>
                 )}
+                {rx.length > 0 && (
+                  <div className="reactions">
+                    {rx.map(([emoji, ids]) => (
+                      <button key={emoji} type="button" className={`rx ${ids.includes(me.id) ? 'on' : ''}`} onClick={() => react(m.id, emoji)} aria-pressed={ids.includes(me.id)}>
+                        {emoji} <b>{ids.length}</b>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {picker === m.id && (
+                  <div className="picker" role="menu">
+                    {EMOJI.map((e) => (
+                      <button key={e} type="button" role="menuitem" onClick={() => react(m.id, e)}>{e}</button>
+                    ))}
+                  </div>
+                )}
                 <small className="msg-meta">
                   {timeFmt(lang, m.created_at)}
                   {m.edited_at && <span> · {t('chat_edited')}</span>}
+                  {!isEditing && (
+                    <button type="button" className="rx-add" onClick={() => setPicker(picker === m.id ? null : m.id)} aria-label={t('chat_react')} aria-expanded={picker === m.id}>
+                      <Icon name="smile" size={15} />
+                    </button>
+                  )}
                   {mine && !isEditing && (
                     <span className="msg-actions">
                       <button type="button" onClick={() => setEditing({ id: m.id, text: m.text })} aria-label={t('edit')}>
@@ -253,6 +297,7 @@ function Thread({ room, me, people, markSeen }) {
                 </small>
               </div>
             </div>
+            </Fragment>
           );
         })}
       </div>

@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { useApp } from '../app-context';
 import { NOTE_COLORS } from '../config';
 import { href } from '../router';
-import { byId, firstName } from '../roster';
+import { firstName } from '../roster';
 import { Flag } from './Flag';
 import { Icon } from './Icons';
 
 export function NoteCard({ note, showTo = false, index = 0 }) {
-  const { meId, deleteNote, t, toast } = useApp();
-  const from = byId(note.from_id);
-  const to = byId(note.to_id);
-  const mine = meId && note.from_id === meId;
+  const { meId, deleteNote, t, toast, person } = useApp();
+  const from = person(note.from_id);
+  const to = person(note.to_id);
+  const mine = meId && (note.from_id === meId || note.to_id === meId);
   const remove = async () => {
     try {
       await deleteNote(note.id);

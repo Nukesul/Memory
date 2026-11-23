@@ -13,7 +13,8 @@ export function buildPerson(base, profile) {
   const photos = data.photos ?? base.seed.slice(1).map(seedPhoto);
   const name = (data.name || '').trim() || base.name;
   const country = data.country || base.country;
-  return { ...base, name, country, baseName: base.name, baseCountry: base.country, data, avatar, photos, filled: !!profile?.filled, updatedAt: profile?.updated_at };
+  const avatarY = Number.isFinite(Number(data.avatarY)) && data.avatarY !== undefined ? Number(data.avatarY) : 20;
+  return { ...base, name, country, avatarY, baseName: base.name, baseCountry: base.country, data, avatar, photos, filled: !!profile?.filled, updatedAt: profile?.updated_at };
 }
 
 

@@ -14,7 +14,7 @@ export function Avatar({ p, full = false, className = '' }) {
   const src = p.avatar ? asset(full ? p.avatar.full : p.avatar.thumb) : null;
   return (
     <span className={`avatar ${className}`} style={{ '--hue': COUNTRY_HUE[p.country] }}>
-      {src ? <img src={src} alt="" loading={full ? 'eager' : 'lazy'} decoding="async" /> : <span className="avatar-initials">{initials(p.name)}</span>}
+      {src ? <img src={src} alt="" loading={full ? 'eager' : 'lazy'} decoding="async" style={p.avatarY == null ? undefined : { objectPosition: `50% ${p.avatarY}%` }} /> : <span className="avatar-initials">{initials(p.name)}</span>}
     </span>
   );
 }

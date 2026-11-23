@@ -124,6 +124,10 @@ const cloud = {
     const { error } = await sb.from('messages').delete().eq('id', id);
     if (error) throw error;
   },
+  async reactMessage(id, reactions) {
+    const { error } = await sb.from('messages').update({ reactions }).eq('id', id);
+    if (error) throw error;
+  },
 };
 
 // ───────── Local demo adapter ─────────
@@ -178,6 +182,11 @@ const demo = {
   async deleteMessage(id) {
     const s = demo.read();
     s.messages = (s.messages || []).filter((m) => m.id !== id);
+    demo.write(s);
+  },
+  async reactMessage(id, reactions) {
+    const s = demo.read();
+    s.messages = (s.messages || []).map((m) => (m.id === id ? { ...m, reactions } : m));
     demo.write(s);
   },
   async saveVote(vote) {

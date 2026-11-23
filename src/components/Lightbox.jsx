@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../app-context';
 import { asset } from '../people';
-import { byId } from '../roster';
 import { href } from '../router';
 import { Icon } from './Icons';
 
 export function Lightbox() {
-  const { box, closePhotos, t } = useApp();
+  const { box, closePhotos, t, person, toast } = useApp();
   const [i, setI] = useState(0);
   const touch = useRef(null);
   const closeBtn = useRef(null);
@@ -36,7 +35,24 @@ export function Lightbox() {
 
   if (!box) return null;
   const it = box.items[i];
-  const owner = it.personId ? byId(it.personId) : null;
+  const owner = it.personId ? person(it.personId) : null;
+  const download = async () => {
+    const url = asset(it.full);
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `2J-${(owner?.name || 'photo').replace(/\s+/g, '-')}-${i + 1}.${blob.type.includes('webp') ? 'webp' : 'jpg'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    } catch {
+      window.open(url, '_blank', 'noopener');
+      toast(t('dl_fallback'));
+    }
+  };
 
   return (
     <div
@@ -78,6 +94,9 @@ export function Lightbox() {
           <span className="lb-count">
             {i + 1} / {n}
           </span>
+          <button type="button" className="lb-dl" onClick={download}>
+            <Icon name="download" size={16} /> {t('download')}
+          </button>
         </figcaption>
       </figure>
     </div>

@@ -83,3 +83,6 @@ create policy "messages read" on public.messages for select to anon, authenticat
 create policy "messages insert" on public.messages for insert to anon, authenticated with check (true);
 create policy "messages update" on public.messages for update to anon, authenticated using (true) with check (true);
 create policy "messages delete" on public.messages for delete to anon, authenticated using (true);
+
+-- Emoji reactions on chat messages: {"👍": [1, 5], "😂": [3]}
+alter table public.messages add column if not exists reactions jsonb not null default '{}'::jsonb;

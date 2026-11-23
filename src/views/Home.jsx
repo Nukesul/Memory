@@ -11,6 +11,8 @@ import { Icon } from '../components/Icons';
 import { NoteCard } from '../components/Notes';
 import { Avatar } from '../components/Avatar';
 import { Scene, Cloud, Petal, Flower, Star, Sparkle, Onigiri, Plane } from '../components/Doodles';
+import { completion } from '../people';
+import { firstName } from '../roster';
 
 const DAY = 864e5;
 const HERO_IDS = [3, 5, 12, 18, 19, 15, 4];
@@ -88,6 +90,8 @@ export default function Home() {
         </div>
       </section>
 
+      {me && <ForYou />}
+
       {reel.length >= 6 && (
         <section className="reel-sec" aria-label={t('reel_title')}>
           <div className="section-head">
@@ -158,6 +162,7 @@ export default function Home() {
           <p>{t('capsule_text', { date: fmt.format(capsule) })}</p>
           <a className="link-arrow" href={href('me')}>{t('capsule_cta')} <Icon name="arrow" size={16} /></a>
         </section>
+        <News />
         <RandomMemory />
         <section className="panel play-teaser">
           <Onigiri className="deco" size={54} />
@@ -165,6 +170,14 @@ export default function Home() {
           <p>{t('play_teaser_text')}</p>
           <a className="btn btn-white" href={href('play')}>
             {t('play_go')} <Plane size={24} />
+          </a>
+        </section>
+        <section className="panel book-teaser">
+          <Star className="deco" size={40} fill="var(--sakura)" />
+          <h2>{t('book_teaser')}</h2>
+          <p>{t('book_teaser_text')}</p>
+          <a className="btn btn-white" href={href('book')}>
+            <Icon name="book" size={18} /> {t('book_open')}
           </a>
         </section>
         <section className="panel numbers" aria-label="numbers">
@@ -262,6 +275,73 @@ function RandomMemory() {
       <button className="btn btn-ghost" onClick={roll}>
         <Icon name="shuffle" size={18} /> {pick ? t('random_again') : t('random_btn')}
       </button>
+    </section>
+  );
+}
+
+const rel = (lang, iso) => {
+  const diff = (new Date(iso).getTime() - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+  const steps = [[60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.3, 'week'], [12, 'month'], [Infinity, 'year']];
+  let v = diff;
+  for (const [k, unit] of steps) {
+    if (Math.abs(v) < k) return rtf.format(Math.round(v), unit);
+    v /= k;
+  }
+  return '';
+};
+
+/** A short personal summary for the logged-in person. */
+function ForYou() {
+  const { t, me, state, unread } = useApp();
+  const msgs = Object.values(unread).reduce((a, b) => a + b, 0);
+  const notes = state.notes.filter((n) => n.to_id === me.id).length;
+  const prog = completion({ ...me.data, avatar: me.avatar, photos: me.photos });
+  return (
+    <section className="foryou" aria-label={t('foryou_hi', { name: firstName(me.name) })}>
+      <p className="foryou-hi"><Avatar p={me} className="mini round" /> {t('foryou_hi', { name: firstName(me.name) })}</p>
+      <ul>
+        <li><a href={href('chat')}><Icon name="chat" size={18} /> {msgs > 0 ? t('foryou_msgs', { n: msgs }) : t('foryou_nomsgs')}</a></li>
+        <li><a href={href('wall')}><Icon name="note" size={18} /> {t('foryou_notes', { n: notes })}</a></li>
+        <li><a href={href('me')}><Icon name="user" size={18} /> {prog.done >= prog.total ? t('foryou_done') : t('foryou_progress', { n: prog.done, total: prog.total })}</a></li>
+      </ul>
+    </section>
+  );
+}
+
+/** What happened lately: updated pages and new notes. */
+function News() {
+  const { t, lang, people, state, person } = useApp();
+  const items = useMemo(() => {
+    const pages = people.filter((p) => p.filled && p.updatedAt).map((p) => ({ k: `p${p.id}`, at: p.updatedAt, p }));
+    const notes = state.notes.slice(0, 20).map((n) => ({ k: `n${n.id}`, at: n.created_at, n }));
+    return [...pages, ...notes].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 6);
+  }, [people, state.notes]);
+  return (
+    <section className="panel news">
+      <h2>{t('news_title')}</h2>
+      {items.length === 0 ? (
+        <p className="muted">{t('news_empty')}</p>
+      ) : (
+        <ul className="news-list">
+          {items.map((it) => {
+            const who = it.p || person(it.n.from_id);
+            const to = it.n ? person(it.n.to_id) : null;
+            if (!who) return null;
+            return (
+              <li key={it.k}>
+                <a href={href(it.p ? `p/${it.p.id}` : `p/${to?.id || who.id}`)}>
+                  <Avatar p={who} className="mini round" />
+                  <span>
+                    <b>{firstName(who.name)}</b> {it.p ? t('news_page') : t('news_note', { to: to ? firstName(to.name) : '…' })}
+                  </span>
+                  <time>{rel(lang, it.at)}</time>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }

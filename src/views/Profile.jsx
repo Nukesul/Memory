@@ -1,12 +1,24 @@
 import { useApp } from '../app-context';
-import { byId } from '../roster';
+import { byId, SEATING } from '../roster';
 import { href } from '../router';
 import { Sheet } from '../components/Sheet';
 import { NoteCard, NoteComposer } from '../components/Notes';
 import { Icon } from '../components/Icons';
 
+function relTime(lang, iso) {
+  const diff = (new Date(iso).getTime() - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+  const steps = [[60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.3, 'week'], [12, 'month'], [Infinity, 'year']];
+  let v = diff;
+  for (const [k, unit] of steps) {
+    if (Math.abs(v) < k) return rtf.format(Math.round(v), unit);
+    v /= k;
+  }
+  return '';
+}
+
 export default function Profile({ id }) {
-  const { t, people, state, me, openPhotos } = useApp();
+  const { t, lang, people, state, me, openPhotos, toast } = useApp();
   const base = byId(id);
   if (!base) {
     return (
@@ -17,12 +29,25 @@ export default function Profile({ id }) {
     );
   }
   const p = people.find((x) => x.id === base.id);
-  const idx = people.findIndex((x) => x.id === p.id);
-  const prev = people[(idx - 1 + people.length) % people.length];
-  const next = people[(idx + 1) % people.length];
+  const idx = SEATING.indexOf(p.id);
+  const prev = people.find((x) => x.id === SEATING[(idx - 1 + SEATING.length) % SEATING.length]);
+  const next = people.find((x) => x.id === SEATING[(idx + 1) % SEATING.length]);
   const notes = state.notes.filter((n) => n.to_id === p.id);
   const isMe = me?.id === p.id;
   const photoItems = p.photos.map((ph) => ({ ...ph, personId: p.id }));
+  const share = async () => {
+    const url = `${location.origin}${location.pathname}#/p/${p.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: p.name, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        toast(t('link_copied'));
+      }
+    } catch {
+      /* user cancelled */
+    }
+  };
+  const ago = p.updatedAt && p.filled ? relTime(lang, p.updatedAt) : '';
 
   return (
     <section className="page profile">
@@ -46,6 +71,23 @@ export default function Profile({ id }) {
         </aside>
       )}
 
+      <div className="profile-actions">
+        {me && !isMe && (
+          <a className="btn btn-small" href={href(`chat/${p.id}`)}>
+            <Icon name="chat" size={16} /> {t('write_message')}
+          </a>
+        )}
+        {!isMe && (
+          <a className="btn btn-small btn-white" href="#note-form" onClick={(e) => { e.preventDefault(); document.getElementById('note-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>
+            <Icon name="note" size={16} /> {t('write_note')}
+          </a>
+        )}
+        <button type="button" className="btn btn-small btn-ghost" onClick={share}>
+          <Icon name="link" size={16} /> {t('share')}
+        </button>
+        {ago && <span className="muted updated">{t('updated_ago', { when: ago })}</span>}
+      </div>
+
       <Sheet p={p} data={{ ...p.data, avatar: p.avatar, photos: p.photos }} examples={!p.filled} onPhoto={(i) => openPhotos(photoItems, i)} />
 
       <section className="notes-section">
@@ -59,7 +101,9 @@ export default function Profile({ id }) {
         ) : (
           <p className="muted">{t('notes_empty')}</p>
         )}
-        <NoteComposer toId={p.id} />
+        <div id="note-form">
+          <NoteComposer toId={p.id} />
+        </div>
       </section>
     </section>
   );

@@ -2,20 +2,27 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../app-context';
 import { COUNTRY_ORDER, COUNTRY_HUE } from '../config';
 import { href } from '../router';
+import { SEATING } from '../roster';
 import { Avatar } from '../components/Avatar';
 import { Flag } from '../components/Flag';
 
 export default function People({ filter }) {
   const { t, people, country } = useApp();
   const [q, setQ] = useState('');
+  const [sort, setSort] = useState('seat');
   const active = COUNTRY_ORDER.includes(filter) ? filter : null;
 
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return people.filter(
-      (p) => (!active || p.country === active) && (!s || p.name.toLowerCase().includes(s) || country(p.country).toLowerCase().includes(s) || (p.data.role || '').toLowerCase().includes(s)),
+    const found = people.filter(
+      (p) =>
+        (!active || p.country === active) &&
+        (!s || p.name.toLowerCase().includes(s) || country(p.country).toLowerCase().includes(s) || (p.data.role || '').toLowerCase().includes(s) || (p.data.nickname || '').toLowerCase().includes(s)),
     );
-  }, [people, q, active, country]);
+    if (sort === 'az') return [...found].sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'filled') return [...found].sort((a, b) => Number(b.filled) - Number(a.filled) || SEATING.indexOf(a.id) - SEATING.indexOf(b.id));
+    return [...found].sort((a, b) => SEATING.indexOf(a.id) - SEATING.indexOf(b.id));
+  }, [people, q, active, country, sort]);
 
   return (
     <section className="page">
@@ -33,7 +40,17 @@ export default function People({ filter }) {
             </a>
           ))}
         </div>
-        <input className="search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('search')} aria-label={t('search')} />
+        <div className="filter-row">
+          <input className="search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('search')} aria-label={t('search')} />
+          <label className="select-wrap">
+            <span className="visually-hidden">{t('sort')}</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="seat">{t('sort_seat')}</option>
+              <option value="az">{t('sort_az')}</option>
+              <option value="filled">{t('sort_filled')}</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {list.length === 0 ? (
