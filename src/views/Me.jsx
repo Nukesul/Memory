@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../app-context';
-import { COUNTRY_ORDER, FIELDS, MAX_PHOTOS } from '../config';
+import { COUNTRY_ORDER, FIELDS, FUN_FIELDS, MAX_PHOTOS } from '../config';
 import { matchNames } from '../roster';
 import { sampleFor } from '../samples';
 import { asset, completion } from '../people';
@@ -34,7 +34,7 @@ function Login() {
     if (code) input.current?.focus();
   }, [code]);
 
-  const matches = code ? matchNames(code, name) : [];
+  const matches = code ? matchNames(code, name, people) : [];
   const submit = (e) => {
     e.preventDefault();
     setTried(true);
@@ -209,7 +209,10 @@ function Editor({ p }) {
   const setCaption = (i, cap) => change((d) => ({ photos: d.photos.map((ph, k) => (k === i ? { ...ph, cap } : ph)) }));
 
   const prog = completion(draft);
-  const checkLabels = ['c_photo', 'c_dream', 'c_memory', 'c_quote', 'c_message', 'c_photos'];
+  const checkLabels = ['c_photo', 'c_dream', 'c_memory', 'c_quote', 'c_message', 'c_photos', 'c_fun'];
+  const shownName = (draft.name || '').trim() || p.baseName;
+  const shownCountry = draft.country || p.baseCountry;
+  const live = { ...p, name: shownName, country: shownCountry };
   const photos = draft.photos || [];
   const statusText = { idle: '', dirty: t('st_dirty'), saving: t('st_saving'), saved: t('st_saved'), error: t('st_error') }[status];
 
@@ -217,10 +220,10 @@ function Editor({ p }) {
     <section className="page cabinet">
       <header className="cab-head">
         <div>
-          <p className="cab-hi">{t('cab_hi', { name: p.name.split(' ')[0] })}</p>
+          <p className="cab-hi">{t('cab_hi', { name: shownName.split(' ')[0] })}</p>
           <h1 className="page-title">{t('cab_title')}</h1>
           <p className="cab-who">
-            <Flag code={p.country} /> {p.name} · {country(p.country)}
+            <Flag code={shownCountry} /> {shownName} · {country(shownCountry)}
           </p>
         </div>
         <div className="cab-actions">
@@ -261,10 +264,28 @@ function Editor({ p }) {
           <p className="intro">{t('cab_intro')}</p>
 
           <fieldset>
+            <legend>{t('sec_name')}</legend>
+            <label className="field">
+              <span className="field-label">{t('f_name')}</span>
+              <span className="field-hint">{t('h_name')}</span>
+              <input value={draft.name ?? p.baseName} maxLength={40} autoComplete="off" onChange={(e) => change({ name: e.target.value })} onBlur={(e) => !e.target.value.trim() && change({ name: undefined })} />
+            </label>
+            <label className="field">
+              <span className="field-label">{t('f_country')}</span>
+              <span className="field-hint">{t('h_country')}</span>
+              <select value={shownCountry} onChange={(e) => change({ country: e.target.value })}>
+                {COUNTRY_ORDER.map((c) => (
+                  <option key={c} value={c}>{country(c)}</option>
+                ))}
+              </select>
+            </label>
+          </fieldset>
+
+          <fieldset>
             <legend>{t('sec_portrait')}</legend>
             <div className="portrait-edit">
               <div className="portrait-slot">
-                <Avatar p={{ ...p, avatar: draft.avatar || null }} full />
+                <Avatar p={{ ...live, avatar: draft.avatar || null }} full />
                 {busy > 0 && <span className="spin" aria-label={t('uploading')} />}
               </div>
               <div>
@@ -291,6 +312,20 @@ function Editor({ p }) {
                 <span className="count">{(draft[f.key] || '').length}/{f.max}</span>
               </label>
             ))}
+          </fieldset>
+
+          <fieldset>
+            <legend>{t('sec_fun')}</legend>
+            <p className="hint wide">{t('h_fun')}</p>
+            <div className="fun-grid">
+              {FUN_FIELDS.map((f) => (
+                <label key={f.key} className="field fun">
+                  <span className="field-label"><span aria-hidden="true">{f.emoji}</span> {t(`f_${f.key}`)}</span>
+                  <span className="field-hint">{t(`h_${f.key}`)}</span>
+                  <input type={f.type || 'text'} value={draft[f.key] || ''} maxLength={f.max} onChange={(e) => change({ [f.key]: e.target.value })} placeholder={f.type ? undefined : sample[f.key]} />
+                </label>
+              ))}
+            </div>
           </fieldset>
 
           <fieldset>
@@ -326,7 +361,7 @@ function Editor({ p }) {
 
         <aside className="cab-preview" aria-label={t('tab_preview')}>
           <p className="preview-label">{t('preview_label')}</p>
-          <Sheet p={{ ...p, filled: p.filled || prog.done > 0 }} data={draft} examples />
+          <Sheet p={{ ...live, filled: p.filled || prog.done > 0 }} data={draft} examples />
         </aside>
       </div>
     </section>

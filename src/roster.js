@@ -33,16 +33,16 @@ const norm = (s) =>
   s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
 // Finds classmates of one country whose name matches what was typed.
-export function matchNames(country, typed) {
+// Works with the current (possibly edited) name and with the original one,
+// and with the current or the original country.
+export function matchNames(country, typed, people = ROSTER) {
   const q = norm(typed);
   if (q.length < 2) return [];
   const words = q.split(' ');
-  const pool = ROSTER.filter((p) => p.country === country);
-  const exact = pool.filter((p) => norm(p.name) === q);
+  const pool = people.filter((p) => p.country === country || (p.baseCountry || p.country) === country);
+  const names = (p) => [p.name, p.baseName || p.name].map(norm);
+  const exact = pool.filter((p) => names(p).includes(q));
   if (exact.length) return exact;
-  return pool.filter((p) => {
-    const parts = norm(p.name).split(' ');
-    return words.every((w) => parts.some((part) => part.startsWith(w)));
-  });
+  return pool.filter((p) => names(p).some((n) => words.every((w) => n.split(' ').some((part) => part.startsWith(w)))));
 }
 export const firstName = (name) => name.split(' ')[0];

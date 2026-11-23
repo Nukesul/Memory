@@ -33,6 +33,15 @@ const P = {
       <circle cx="12" cy="13.5" r="3.5" />
     </>
   ),
+  edit: <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />,
+  send: <path d="M4 12L20 4l-5 16-3.5-6.5zM11.5 13.5L20 4" />,
+  chat: <path d="M4 5h16v11H9l-5 4zM8 9.5h8M8 12.5h5" />,
+  game: (
+    <>
+      <rect x="2.5" y="7" width="19" height="11" rx="5" />
+      <path d="M8 10v5M5.5 12.5h5M15.5 11h.01M18 14h.01" />
+    </>
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   check: <path d="M5 12.5l4.5 4.5L19 7" />,

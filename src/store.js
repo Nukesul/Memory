@@ -46,13 +46,15 @@ const toDataUrl = (blob) =>
 // ───────── Supabase adapter ─────────
 const cloud = {
   async load() {
-    const [p, n] = await Promise.all([
+    const [p, n, v] = await Promise.all([
       sb.from('profiles').select('id,filled,data,updated_at'),
       sb.from('notes').select('*').order('created_at', { ascending: false }).limit(300),
+      sb.from('votes').select('voter_id,category,target_id'),
     ]);
     if (p.error) throw p.error;
     if (n.error) throw n.error;
-    return { profiles: Object.fromEntries(p.data.map((r) => [r.id, r])), notes: n.data };
+    // Votes are optional: the site still works if the table is missing.
+    return { profiles: Object.fromEntries(p.data.map((r) => [r.id, r])), notes: n.data, votes: v.error ? [] : v.data };
   },
   async saveProfile(id, data, filled) {
     const row = { id, data, filled, updated_at: new Date().toISOString() };
@@ -92,12 +94,42 @@ const cloud = {
     const { error } = await sb.from('notes').delete().eq('id', id);
     if (error) throw error;
   },
+  async saveVote(vote) {
+    const { error } = await sb.from('votes').upsert(vote);
+    if (error) throw error;
+  },
+  // Chat: the class room plus private messages that involve me.
+  async loadChat(me) {
+    const { data, error } = await sb
+      .from('messages')
+      .select('*')
+      .or(`to_id.is.null,from_id.eq.${me},to_id.eq.${me}`)
+      .order('created_at', { ascending: false })
+      .limit(250);
+    if (error) throw error;
+    return data.reverse();
+  },
+  async sendMessage(m) {
+    const { data, error } = await sb.from('messages').insert(m).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async editMessage(id, text) {
+    const edited_at = new Date().toISOString();
+    const { error } = await sb.from('messages').update({ text, edited_at }).eq('id', id);
+    if (error) throw error;
+    return edited_at;
+  },
+  async deleteMessage(id) {
+    const { error } = await sb.from('messages').delete().eq('id', id);
+    if (error) throw error;
+  },
 };
 
 // ───────── Local demo adapter ─────────
 const DEMO_KEY = 'memoris:demo';
 const demo = {
-  read: () => ls.get(DEMO_KEY, { profiles: {}, notes: [] }),
+  read: () => ({ votes: [], ...ls.get(DEMO_KEY, { profiles: {}, notes: [] }) }),
   write(v) {
     if (!ls.set(DEMO_KEY, v)) throw new Error('storage-full');
   },
@@ -124,6 +156,33 @@ const demo = {
   async deleteNote(id) {
     const s = demo.read();
     s.notes = s.notes.filter((n) => n.id !== id);
+    demo.write(s);
+  },
+  async loadChat(me) {
+    return (demo.read().messages || []).filter((m) => m.to_id == null || m.from_id === me || m.to_id === me);
+  },
+  async sendMessage(m) {
+    const s = demo.read();
+    const row = { ...m, id: Date.now(), created_at: new Date().toISOString(), edited_at: null };
+    s.messages = [...(s.messages || []), row];
+    demo.write(s);
+    return row;
+  },
+  async editMessage(id, text) {
+    const s = demo.read();
+    const edited_at = new Date().toISOString();
+    s.messages = (s.messages || []).map((m) => (m.id === id ? { ...m, text, edited_at } : m));
+    demo.write(s);
+    return edited_at;
+  },
+  async deleteMessage(id) {
+    const s = demo.read();
+    s.messages = (s.messages || []).filter((m) => m.id !== id);
+    demo.write(s);
+  },
+  async saveVote(vote) {
+    const s = demo.read();
+    s.votes = [...s.votes.filter((v) => !(v.voter_id === vote.voter_id && v.category === vote.category)), vote];
     demo.write(s);
   },
 };

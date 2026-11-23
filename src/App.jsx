@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { AppProvider, useApp } from './app-context';
 import { useRoute, href } from './router';
 import { Icon } from './components/Icons';
@@ -9,18 +10,26 @@ import Profile from './views/Profile';
 import Gallery from './views/Gallery';
 import Wall from './views/Wall';
 import Me from './views/Me';
+import Chat from './views/Chat';
+import Play from './views/Play';
 
 const NAV = [
   { to: '', icon: 'home', key: 'nav_home', match: ['', undefined] },
   { to: 'people', icon: 'people', key: 'nav_people', match: ['people', 'p'] },
-  { to: 'gallery', icon: 'photo', key: 'nav_gallery', match: ['gallery'] },
-  { to: 'wall', icon: 'note', key: 'nav_wall', match: ['wall'] },
+  { to: 'gallery', icon: 'photo', key: 'nav_gallery', match: ['gallery'], hideMobile: true },
+  { to: 'wall', icon: 'note', key: 'nav_wall', match: ['wall'], hideMobile: true },
+  { to: 'chat', icon: 'chat', key: 'nav_chat', match: ['chat'], badge: true },
+  { to: 'play', icon: 'game', key: 'nav_play', match: ['play'] },
   { to: 'me', icon: 'user', key: 'nav_me', match: ['me'] },
 ];
 
 function Shell() {
   const [section, arg] = useRoute();
-  const { t, lang, setLang, theme, toggleTheme, state, refresh, toasts, cloud, me } = useApp();
+  const { t, lang, setLang, theme, toggleTheme, state, refresh, toasts, cloud, me, unread } = useApp();
+  useEffect(() => {
+    document.documentElement.style.setProperty('--banner', cloud ? '0px' : '56px');
+  }, [cloud]);
+  const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
 
   let view;
   if (state.status === 'loading') {
@@ -41,6 +50,8 @@ function Shell() {
   else if (section === 'gallery') view = <Gallery />;
   else if (section === 'wall') view = <Wall />;
   else if (section === 'me') view = <Me />;
+  else if (section === 'chat') view = <Chat room={arg} />;
+  else if (section === 'play') view = <Play tab={arg} />;
   else view = <Home />;
 
   return (
@@ -66,6 +77,7 @@ function Shell() {
           {NAV.map((n) => (
             <a key={n.to} href={href(n.to)} aria-current={n.match.includes(section) ? 'page' : undefined}>
               {t(n.key)}
+              {n.badge && unreadTotal > 0 && <span className="badge">{unreadTotal}</span>}
             </a>
           ))}
         </nav>
@@ -93,9 +105,10 @@ function Shell() {
       </main>
 
       <nav className="tabbar" aria-label="Main">
-        {NAV.map((n) => (
+        {NAV.filter((n) => !n.hideMobile).map((n) => (
           <a key={n.to} href={href(n.to)} aria-current={n.match.includes(section) ? 'page' : undefined}>
             <Icon name={n.icon} />
+            {n.badge && unreadTotal > 0 && <span className="badge dot">{unreadTotal}</span>}
             <span>{t(n.key)}</span>
           </a>
         ))}

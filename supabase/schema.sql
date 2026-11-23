@@ -50,3 +50,36 @@ drop policy if exists "photos upload" on storage.objects;
 drop policy if exists "photos delete" on storage.objects;
 create policy "photos upload" on storage.objects for insert to anon, authenticated with check (bucket_id = 'photos');
 create policy "photos delete" on storage.objects for delete to anon, authenticated using (bucket_id = 'photos');
+
+-- ───────── Class awards (votes) ─────────
+create table if not exists public.votes (
+  voter_id int not null check (voter_id between 1 and 20),
+  category text not null check (char_length(category) <= 30),
+  target_id int not null check (target_id between 1 and 20),
+  created_at timestamptz not null default now(),
+  primary key (voter_id, category),
+  check (voter_id <> target_id)
+);
+alter table public.votes enable row level security;
+create policy "votes read" on public.votes for select to anon, authenticated using (true);
+create policy "votes insert" on public.votes for insert to anon, authenticated with check (true);
+create policy "votes update" on public.votes for update to anon, authenticated using (true) with check (true);
+create policy "votes delete" on public.votes for delete to anon, authenticated using (true);
+
+-- ───────── Chat: to_id null = whole class, otherwise a private message ─────────
+create table if not exists public.messages (
+  id bigint generated always as identity primary key,
+  from_id int not null check (from_id between 1 and 20),
+  to_id int check (to_id between 1 and 20),
+  text text not null check (char_length(text) between 1 and 500),
+  created_at timestamptz not null default now(),
+  edited_at timestamptz,
+  check (to_id is null or to_id <> from_id)
+);
+create index if not exists messages_created_idx on public.messages (created_at desc);
+create index if not exists messages_to_idx on public.messages (to_id);
+alter table public.messages enable row level security;
+create policy "messages read" on public.messages for select to anon, authenticated using (true);
+create policy "messages insert" on public.messages for insert to anon, authenticated with check (true);
+create policy "messages update" on public.messages for update to anon, authenticated using (true) with check (true);
+create policy "messages delete" on public.messages for delete to anon, authenticated using (true);

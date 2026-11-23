@@ -4,6 +4,7 @@ import { asset } from '../people';
 import { Avatar } from './Avatar';
 import { Flag } from './Flag';
 import { Icon } from './Icons';
+import { FUN_FIELDS } from '../config';
 
 const SECTIONS = ['dream', 'memory', 'quote', 'jpWord', 'message', 'wish', 'contact'];
 
@@ -24,6 +25,12 @@ export function Sheet({ p, data, examples = false, onPhoto }) {
   const role = read('role');
   const photos = data.photos || [];
   const hasBody = SECTIONS.some((k) => read(k));
+  const facts = FUN_FIELDS.map((f) => ({ ...f, v: read(f.key) })).filter((f) => f.v);
+  const factText = (f) => {
+    if (f.key !== 'birthday') return f.v.text;
+    const d = new Date(`${f.v.text}T12:00:00`);
+    return Number.isNaN(d.getTime()) ? f.v.text : new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long' }).format(d);
+  };
 
   return (
     <article className="sheet">
@@ -52,7 +59,21 @@ export function Sheet({ p, data, examples = false, onPhoto }) {
         </div>
       </header>
 
-      {!hasBody && !examples && <p className="sheet-empty">{t('sheet_empty', { name: p.name.split(' ')[0] })}</p>}
+      {facts.length > 0 && (
+        <ul className="facts" aria-label={t('sec_fun')}>
+          {facts.map((f, i) => (
+            <li key={f.key} className={`fact ${f.v.ex ? 'ex' : ''}`} style={{ '--n': i }} title={t(`f_${f.key}`)}>
+              <span className="fact-emoji" aria-hidden="true">{f.emoji}</span>
+              <span className="fact-body">
+                <small>{t(`f_${f.key}`)}</small>
+                {factText(f)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!hasBody && !examples && facts.length === 0 && <p className="sheet-empty">{t('sheet_empty', { name: p.name.split(' ')[0] })}</p>}
 
       <div className="sheet-body">
         {SECTIONS.map((key) => {

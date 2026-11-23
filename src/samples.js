@@ -98,7 +98,28 @@ const SETS = [
   },
 ];
 
+// Short fun facts for the examples.
+const FUN = [
+  {
+    en: { birthday: '2008-03-14', food: 'Ramen with extra egg', song: 'Any song with a good bass line', power: 'Falling asleep on any train', hello: 'Salam!' },
+    ru: { birthday: '2008-03-14', food: 'Рамэн с дополнительным яйцом', song: 'Любая песня с хорошим басом', power: 'Засыпать в любой электричке', hello: 'Салам!' },
+    ja: { birthday: '2008-03-14', food: '味玉ラーメン', song: 'ベースがかっこいい曲なら何でも', power: 'どの電車でも寝られる', hello: 'やあ！' },
+  },
+  {
+    en: { birthday: '2008-08-02', food: 'Mom’s dumplings', song: 'Our class karaoke song', power: 'Finding the best snack in any shop', hello: 'Xin chào!' },
+    ru: { birthday: '2008-08-02', food: 'Мамины пельмени', song: 'Наша классная песня для караоке', power: 'Находить лучший снек в любом магазине', hello: 'Привет!' },
+    ja: { birthday: '2008-08-02', food: 'お母さんの餃子', song: 'クラスのカラオケ定番曲', power: 'どの店でも一番おいしいお菓子を見つける', hello: 'こんにちは！' },
+  },
+  {
+    en: { birthday: '2007-12-21', food: 'Mango with chili salt', song: 'Lo-fi beats for night study', power: 'Never getting lost', hello: 'Namaste!' },
+    ru: { birthday: '2007-12-21', food: 'Манго с солью и чили', song: 'Lo-fi для ночной учёбы', power: 'Никогда не теряться', hello: 'Намасте!' },
+    ja: { birthday: '2007-12-21', food: 'チリソルトのマンゴー', song: '夜の勉強用ローファイ', power: '絶対に迷わない', hello: 'ナマステ！' },
+  },
+];
+
 export function sampleFor(id, lang) {
-  const set = SETS[id % SETS.length];
-  return set[lang] || set.en;
+  const k = id % SETS.length;
+  const set = SETS[k];
+  const fun = FUN[k];
+  return { ...(set[lang] || set.en), ...(fun[lang] || fun.en) };
 }

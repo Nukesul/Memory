@@ -54,6 +54,7 @@ export function AppProvider({ children }) {
   const [state, setState] = useState({
     profiles: cached?.profiles || {},
     notes: cached?.notes || [],
+    votes: cached?.votes || [],
     status: cached ? 'ready' : 'loading',
   });
   const lastLoad = useRef(0);
@@ -62,7 +63,7 @@ export function AppProvider({ children }) {
     try {
       const d = await api.load();
       if (CLOUD) ls.set('memoris:cache', d);
-      setState({ profiles: d.profiles, notes: d.notes, status: 'ready' });
+      setState({ profiles: d.profiles, notes: d.notes, votes: d.votes || [], status: 'ready' });
     } catch (e) {
       console.error(e);
       setState((s) => (s.status === 'ready' ? s : { ...s, status: 'error' }));
@@ -115,7 +116,7 @@ export function AppProvider({ children }) {
     const row = await api.saveProfile(id, clean, isFilled(clean));
     setState((s) => {
       const profiles = { ...s.profiles, [id]: row };
-      if (CLOUD) ls.set('memoris:cache', { profiles, notes: s.notes });
+      if (CLOUD) ls.set('memoris:cache', { profiles, notes: s.notes, votes: s.votes });
       return { ...s, profiles };
     });
     return row;
@@ -130,7 +131,75 @@ export function AppProvider({ children }) {
     setState((s) => ({ ...s, notes: s.notes.filter((n) => n.id !== id) }));
   };
 
+  // ── chat ──
+  const [chat, setChat] = useState([]);
+  const [seen, setSeen] = useState(() => ls.get('memoris:seen', {}));
+  const fast = useRef(false);
+  const setChatFast = useCallback((v) => {
+    fast.current = v;
+  }, []);
+  const refreshChat = useCallback(async () => {
+    if (!meId) return;
+    try {
+      setChat(await api.loadChat(meId));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [meId]);
+  useEffect(() => {
+    if (!meId) {
+      setChat([]);
+      return undefined;
+    }
+    refreshChat();
+    let last = Date.now();
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - last >= (fast.current ? 4000 : 30000)) {
+        last = Date.now();
+        refreshChat();
+      }
+    }, 2000);
+    return () => clearInterval(id);
+  }, [meId, refreshChat]);
+  const markSeen = useCallback((room) => {
+    setSeen((s) => {
+      const next = { ...s, [room]: Date.now() };
+      ls.set('memoris:seen', next);
+      return next;
+    });
+  }, []);
+  const sendMessage = async (toId, text) => {
+    const row = await api.sendMessage({ from_id: meId, to_id: toId, text: text.trim() });
+    setChat((l) => [...l, row]);
+  };
+  const editMessage = async (id, text) => {
+    const edited_at = await api.editMessage(id, text.trim());
+    setChat((l) => l.map((m) => (m.id === id ? { ...m, text: text.trim(), edited_at } : m)));
+  };
+  const deleteMessage = async (id) => {
+    await api.deleteMessage(id);
+    setChat((l) => l.filter((m) => m.id !== id));
+  };
+  // Unread = messages from others, newer than the last time I opened that room.
+  const unread = useMemo(() => {
+    const by = {};
+    for (const m of chat) {
+      if (m.from_id === meId) continue;
+      const room = m.to_id == null ? 'all' : String(m.from_id);
+      if (new Date(m.created_at).getTime() > (seen[room] || 0)) by[room] = (by[room] || 0) + 1;
+    }
+    return by;
+  }, [chat, seen, meId]);
+
+  const vote = async (category, targetId) => {
+    const row = { voter_id: meId, category, target_id: targetId };
+    await api.saveVote(row);
+    setState((s) => ({ ...s, votes: [...s.votes.filter((v) => !(v.voter_id === meId && v.category === category)), row] }));
+  };
+
   const value = {
+    vote, chat, unread, refreshChat, setChatFast, markSeen, sendMessage, editMessage, deleteMessage,
     lang, setLang, t, country, theme, toggleTheme,
     state, people, refresh, meId, me, login, logout,
     toasts, toast, box, openPhotos, closePhotos,

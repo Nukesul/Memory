@@ -6,7 +6,7 @@ export const CLASS = {
   cityJa: '群馬県前橋市',
   years: '2025–2027',
   // Used for the "days since / until graduation" counter. Change if the date is different.
-  graduation: '2026-09-20',
+  graduation: '2027-03-15',
   capsuleYears: 10,
 };
 
@@ -37,6 +37,39 @@ export const FIELDS = [
   { key: 'message', max: 400, rows: 4 },
   { key: 'wish', max: 300, rows: 3 },
   { key: 'contact', max: 60, rows: 1 },
+];
+
+// Short "fun facts" shown as stickers on the page.
+export const FUN_FIELDS = [
+  { key: 'birthday', type: 'date', emoji: '🎂' },
+  { key: 'food', max: 40, rows: 1, emoji: '🍜' },
+  { key: 'song', max: 80, rows: 1, emoji: '🎵' },
+  { key: 'power', max: 80, rows: 1, emoji: '⚡' },
+  { key: 'hello', max: 40, rows: 1, emoji: '👋' },
+];
+
+// "Hello" in each country's own language (shown on the home page).
+export const GREETINGS = {
+  KG: { word: 'Салам', say: 'salam' },
+  ID: { word: 'Halo', say: 'ha-lo' },
+  VN: { word: 'Xin chào', say: 'sin chow' },
+  LK: { word: 'ආයුබෝවන්', say: 'ayubowan' },
+  CN: { word: '你好', say: 'nǐ hǎo' },
+  NP: { word: 'नमस्ते', say: 'namaste' },
+  MN: { word: 'Сайн уу', say: 'sain uu' },
+  MM: { word: 'မင်္ဂလာပါ', say: 'min-ga-la-ba' },
+};
+
+// Class awards: everyone can vote once per category.
+export const AWARDS = [
+  { key: 'funny', emoji: '😂' },
+  { key: 'kind', emoji: '💛' },
+  { key: 'famous', emoji: '🌟' },
+  { key: 'style', emoji: '😎' },
+  { key: 'dreamer', emoji: '🚀' },
+  { key: 'soul', emoji: '🎉' },
+  { key: 'late', emoji: '⏰' },
+  { key: 'chef', emoji: '🍳' },
 ];
 
 export const MAX_PHOTOS = 8;
