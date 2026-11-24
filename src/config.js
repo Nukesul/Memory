@@ -10,6 +10,15 @@ export const CLASS = {
   capsuleYears: 10,
 };
 
+/** The day the time capsule opens: graduation plus `capsuleYears`. */
+export function capsuleOpenDate() {
+  const d = new Date(`${CLASS.graduation}T09:00:00+09:00`);
+  d.setFullYear(d.getFullYear() + CLASS.capsuleYears);
+  return d;
+}
+
+export const CAPSULE_MAX = 1200;
+
 export const COUNTRIES = {
   KG: { en: 'Kyrgyzstan', ru: 'Кыргызстан', ja: 'キルギス' },
   ID: { en: 'Indonesia', ru: 'Индонезия', ja: 'インドネシア' },

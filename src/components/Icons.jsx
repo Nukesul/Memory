@@ -14,6 +14,12 @@ const P = {
     </>
   ),
   note: <path d="M5 4h14v11l-5 5H5zM14 20v-5h5" />,
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 018 0v3" />
+    </>
+  ),
   user: (
     <>
       <circle cx="12" cy="8" r="4" />

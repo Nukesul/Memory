@@ -38,7 +38,7 @@ export function AppProvider({ children }) {
     const next = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     ls.set('memoris:theme', next);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0e1714' : '#1f3b34');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#07061a' : '#1c1a3a');
     setThemeState(next);
   };
   useEffect(() => {
@@ -48,6 +48,28 @@ export function AppProvider({ children }) {
       /* ignore */
     }
   }, []); // eslint-disable-line
+
+  // ── install as an app (Chrome/Android fires this event; iPhone uses Share → Add to Home Screen) ──
+  const [installEvt, setInstallEvt] = useState(null);
+  useEffect(() => {
+    const onPrompt = (e) => {
+      e.preventDefault();
+      setInstallEvt(e);
+    };
+    const onInstalled = () => setInstallEvt(null);
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+  const install = async () => {
+    if (!installEvt) return;
+    installEvt.prompt();
+    await installEvt.userChoice.catch(() => {});
+    setInstallEvt(null);
+  };
 
   // ── data ──
   const cached = CLOUD ? ls.get('memoris:cache', null) : null;
@@ -222,7 +244,7 @@ export function AppProvider({ children }) {
     state, people, person, refresh, meId, me, login, logout,
     toasts, toast, box, openPhotos, closePhotos,
     saveProfile, uploadPhoto: api.uploadPhoto, removePhoto: api.removePhoto, addNote, deleteNote,
-    cloud: CLOUD,
+    cloud: CLOUD, canInstall: Boolean(installEvt), install,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -4,6 +4,7 @@ import { href } from '../router';
 import { Sheet } from '../components/Sheet';
 import { NoteCard, NoteComposer } from '../components/Notes';
 import { Icon } from '../components/Icons';
+import { Autographs } from '../components/Autographs';
 
 function relTime(lang, iso) {
   const diff = (new Date(iso).getTime() - Date.now()) / 1000;
@@ -89,6 +90,8 @@ export default function Profile({ id }) {
       </div>
 
       <Sheet p={p} data={{ ...p.data, avatar: p.avatar, photos: p.photos }} examples={!p.filled} onPhoto={(i) => openPhotos(photoItems, i)} />
+
+      <Autographs person={p} />
 
       <section className="notes-section">
         <h2>{t('notes_for', { name: p.name.split(' ')[0] })}</h2>

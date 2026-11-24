@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../app-context';
-import { CLASS, COUNTRY_HUE, COUNTRY_ORDER, GREETINGS } from '../config';
+import { CLASS, COUNTRY_HUE, COUNTRY_ORDER, GREETINGS, capsuleOpenDate } from '../config';
 import { SEATING } from '../roster';
 import { sampleFor } from '../samples';
 import { asset } from '../people';
@@ -24,8 +24,7 @@ export default function Home() {
 
   const grad = new Date(`${CLASS.graduation}T09:00:00+09:00`);
   const days = Math.round((grad - Date.now()) / DAY);
-  const capsule = new Date(grad);
-  capsule.setFullYear(capsule.getFullYear() + CLASS.capsuleYears);
+  const capsule = capsuleOpenDate();
   const fmt = new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', day: 'numeric' });
 
   const heroFaces = useMemo(() => {
@@ -160,7 +159,7 @@ export default function Home() {
           <Flower className="deco" size={44} />
           <h2>{t('capsule')}</h2>
           <p>{t('capsule_text', { date: fmt.format(capsule) })}</p>
-          <a className="link-arrow" href={href('me')}>{t('capsule_cta')} <Icon name="arrow" size={16} /></a>
+          <a className="link-arrow" href={href('capsule')}>{t('capsule_cta')} <Icon name="arrow" size={16} /></a>
         </section>
         <News />
         <RandomMemory />

@@ -61,3 +61,11 @@ npm run dev
 Личные сообщения скрыты только на уровне интерфейса. Вход без пароля, поэтому технически их может прочитать тот, кто знает адрес базы. Для школьного чата этого достаточно, для секретов — нет.
 
 Таблицы `votes` и `messages` описаны в `supabase/schema.sql`.
+
+
+## Autographs, time capsule, install
+
+- **Autographs**: on a classmate's page, draw a signature with a finger. It is stored as small vector strokes in `autographs` (one per pair, signing again replaces it).
+- **Time capsule** (`#/capsule`): one letter per person in `capsules`, hidden in the app until graduation + `CLASS.capsuleYears`. The list only reads who has written; texts are fetched for the author, or for everyone after the opening date. It is a class project, not a vault: RLS is open, so don't write real secrets.
+- **Install**: `manifest.webmanifest`, PNG icons and `sw.js` (app shell works offline; data always comes from the network). Chrome shows an install button in the footer; iPhone uses Share → Add to Home Screen.
+- Run the new tables from `supabase/schema.sql` (autographs, capsules) in the Supabase SQL editor.

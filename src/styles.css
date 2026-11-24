@@ -946,3 +946,56 @@ button.chip { font-family: inherit; color: inherit; }
 }
 
 @media (min-width: 1100px) { .desks { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+
+/* ───────── v4: autographs, time capsule, install ───────── */
+.autographs { margin-top: 28px; display: grid; gap: 14px; }
+.autographs h2 { font: 800 1.4rem var(--display); letter-spacing: -0.02em; }
+.auto-wall { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.auto-card { position: relative; background: #fffdf2; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); padding: 10px 10px 8px; transform: rotate(var(--r, 0deg)); display: grid; gap: 4px; color: var(--ink); }
+.auto-card .ink { width: 100%; height: auto; aspect-ratio: 2 / 1; background: repeating-linear-gradient(transparent 0 calc(100% - 1px), rgb(28 26 58 / 0.12) calc(100% - 1px)); }
+.auto-card .auto-by { font-weight: 700; font-size: 0.9rem; color: var(--ink); text-decoration: none; justify-self: end; }
+.auto-card .note-del { position: absolute; top: 4px; right: 4px; }
+[data-theme='dark'] .auto-card { border-color: var(--edge); box-shadow: 4px 4px 0 var(--edge); }
+
+.signpad { display: grid; gap: 10px; max-width: 520px; }
+.signpad-paper { position: relative; background: #fffdf2; border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--ink); aspect-ratio: 2 / 1; overflow: hidden; }
+[data-theme='dark'] .signpad-paper { border-color: var(--edge); box-shadow: 5px 5px 0 var(--edge); }
+.signpad-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.signpad-line { position: absolute; left: 6%; right: 6%; bottom: 22%; border-bottom: 2px dashed rgb(28 26 58 / 0.25); pointer-events: none; }
+.signpad-hint { position: absolute; inset: 0; display: grid; place-items: center; font: 700 1.6rem var(--hand); color: rgb(28 26 58 / 0.35); pointer-events: none; }
+.signpad-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.signpad-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatches { display: flex; gap: 8px; margin-right: auto; }
+.swatch { width: 32px; height: 32px; border-radius: 50%; background: var(--c); border: 2.5px solid var(--ink); cursor: pointer; padding: 0; }
+.swatch.on { outline: 3px solid var(--sun); outline-offset: 2px; }
+[data-theme='dark'] .swatch { border-color: #fff; }
+
+.capsule-page { display: grid; gap: 18px; }
+.capsule-hero { position: relative; padding: 22px 20px; border: 3px solid var(--ink); border-radius: 26px; box-shadow: 6px 6px 0 var(--ink); background: linear-gradient(160deg, var(--sky-top), var(--sky-bot)); color: var(--ink); display: grid; gap: 8px; overflow: hidden; }
+[data-theme='dark'] .capsule-hero { border-color: var(--edge); box-shadow: 6px 6px 0 var(--edge); }
+.capsule-hero .deco { position: absolute; top: 12px; right: 14px; }
+.capsule-hero .page-title, .capsule-hero .lead { color: var(--ink); max-width: 34rem; }
+.cap-count { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cap-count b { font: 800 clamp(2.6rem, 12vw, 4.5rem)/1 var(--display); letter-spacing: -0.04em; }
+.cap-count span { font-weight: 700; }
+.cap-count small { font-weight: 650; }
+
+.jar { position: relative; background: var(--surface); border: 2.5px solid var(--ink); border-radius: 20px; box-shadow: 5px 5px 0 var(--ink); padding: 16px; display: grid; gap: 12px; }
+[data-theme='dark'] .jar { border-color: var(--edge); box-shadow: 5px 5px 0 var(--edge); }
+.jar .deco { position: absolute; top: 10px; right: 12px; }
+.jar-title { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+.jar-faces { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.jar-faces li { position: relative; opacity: 0.4; filter: grayscale(0.8); }
+.jar-faces li.on { opacity: 1; filter: none; }
+.jar-faces .seal { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); font-size: 0.7rem; font-weight: 900; display: grid; place-items: center; }
+
+.capsule-form { display: grid; gap: 10px; }
+.capsule-form textarea { width: 100%; }
+.letters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.letter { background: #fffdf2; color: var(--ink); border: 2.5px solid var(--ink); border-radius: 6px 18px 6px 18px; box-shadow: 5px 5px 0 var(--ink); padding: 16px; display: grid; gap: 10px; transform: rotate(var(--r, 0deg)); align-content: start; }
+.letter p { font: 600 1.15rem/1.45 var(--hand); white-space: pre-wrap; overflow-wrap: anywhere; }
+.letter a { font-weight: 700; color: var(--ink); justify-self: end; text-decoration: none; }
+.letter.mine { transform: none; max-width: 560px; }
+.letter.mine h2 { font: 800 1.1rem var(--display); }
+[data-theme='dark'] .letter { border-color: var(--edge); box-shadow: 5px 5px 0 var(--edge); }
+.small { font-size: 0.88rem; }

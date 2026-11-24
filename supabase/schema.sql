@@ -86,3 +86,32 @@ create policy "messages delete" on public.messages for delete to anon, authentic
 
 -- Emoji reactions on chat messages: {"👍": [1, 5], "😂": [3]}
 alter table public.messages add column if not exists reactions jsonb not null default '{}'::jsonb;
+
+-- ───────── Autographs: a finger-drawn signature on a classmate's page ─────────
+-- ink = {"c": "#1c1a3a", "p": ["M10 20L12 22 ...", ...]}  (vector strokes in a 400x200 box)
+create table if not exists public.autographs (
+  from_id int not null check (from_id between 1 and 20),
+  to_id int not null check (to_id between 1 and 20),
+  ink jsonb not null check (char_length(ink::text) <= 9000),
+  created_at timestamptz not null default now(),
+  primary key (from_id, to_id),
+  check (from_id <> to_id)
+);
+create index if not exists autographs_to_idx on public.autographs (to_id);
+alter table public.autographs enable row level security;
+create policy "autographs read" on public.autographs for select to anon, authenticated using (true);
+create policy "autographs insert" on public.autographs for insert to anon, authenticated with check (true);
+create policy "autographs update" on public.autographs for update to anon, authenticated using (true) with check (true);
+create policy "autographs delete" on public.autographs for delete to anon, authenticated using (true);
+
+-- ───────── Time capsule: one sealed letter per person, opened on the class reunion day ─────────
+create table if not exists public.capsules (
+  author_id int primary key check (author_id between 1 and 20),
+  text text not null check (char_length(text) between 1 and 1200),
+  updated_at timestamptz not null default now()
+);
+alter table public.capsules enable row level security;
+create policy "capsules read" on public.capsules for select to anon, authenticated using (true);
+create policy "capsules insert" on public.capsules for insert to anon, authenticated with check (true);
+create policy "capsules update" on public.capsules for update to anon, authenticated using (true) with check (true);
+create policy "capsules delete" on public.capsules for delete to anon, authenticated using (true);

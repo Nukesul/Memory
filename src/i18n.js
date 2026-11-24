@@ -341,3 +341,49 @@ const V3 = {
   },
 };
 for (const l of Object.keys(V3)) Object.assign(DICT[l], V3[l]);
+
+const V4 = {
+  en: {
+    help_q10: 'How do autographs work?', help_a10: 'Open a classmate’s page, tap “Sign this page” and draw your signature with a finger or a mouse. You can sign again to replace it, or delete it.',
+    help_q11: 'What is the time capsule?', help_a11: 'A letter to your future self. Write it once, and it stays hidden in the app until the opening day. Until then you can change or delete it.',
+    install_app: 'Install the app',
+    auto_title: 'Autographs', auto_canvas: 'Signature pad', auto_hint: 'Sign here with your finger', auto_color: 'Pen colour',
+    auto_undo: 'Undo', auto_clear: 'Clear', auto_save: 'Leave my autograph', auto_saved: 'Autograph saved', auto_too_long: 'That signature is too detailed. Try a simpler one.',
+    auto_unavailable: 'Autographs are not available right now.', auto_empty_me: 'No autographs yet. Ask your friends to sign your page.', auto_empty: 'Nobody has signed yet. Be the first to sign {name}’s page.',
+    auto_login: 'Open your cabinet to sign pages.', auto_self: 'You can’t sign your own page. Your friends will.', auto_redo: 'Sign again', auto_sign: 'Sign this page',
+    cap_lead: 'Write a letter to your future self. It stays sealed until {date}, then the whole class opens it together.', cap_open_lead: 'The capsule is open. Here are the letters.', cap_years: 'about {n} years to go',
+    cap_unavailable: 'The capsule is not available right now. Try again later.', cap_none: 'Nobody wrote a letter.', cap_sealed_n: '{n} of {total} letters sealed', cap_written: 'Letter sealed',
+    cap_login: 'Open your cabinet to write your letter.', cap_form_label: '{name}, write to yourself in the future', cap_ph: 'Where are you now? What do you hope for? What should future you remember about this class?',
+    cap_seal: 'Seal my letter', cap_reseal: 'Seal the new version', cap_privacy: 'Letters are hidden in the app until the opening day. This is a class project, not a vault, so don’t write real secrets.',
+    cap_yours: 'Your sealed letter', cap_edit_after: 'Your letter is above, with everyone else’s.', cap_sealed_toast: 'Letter sealed',
+  },
+  ru: {
+    help_q10: 'Как работают автографы?', help_a10: 'Откройте страницу одноклассника, нажмите «Расписаться» и нарисуйте подпись пальцем или мышкой. Можно расписаться заново или удалить подпись.',
+    help_q11: 'Что такое капсула времени?', help_a11: 'Письмо себе в будущее. Напишите его один раз, и оно будет скрыто в приложении до дня открытия. До этого его можно менять или удалить.',
+    install_app: 'Установить приложение',
+    auto_title: 'Автографы', auto_canvas: 'Поле для подписи', auto_hint: 'Распишитесь пальцем', auto_color: 'Цвет ручки',
+    auto_undo: 'Отменить', auto_clear: 'Стереть', auto_save: 'Оставить автограф', auto_saved: 'Автограф сохранён', auto_too_long: 'Подпись слишком сложная. Попробуйте проще.',
+    auto_unavailable: 'Автографы сейчас недоступны.', auto_empty_me: 'Пока нет автографов. Попросите друзей расписаться.', auto_empty: 'Пока никто не расписался. Будьте первым на странице {name}.',
+    auto_login: 'Откройте кабинет, чтобы расписываться.', auto_self: 'На своей странице расписаться нельзя. Это сделают друзья.', auto_redo: 'Расписаться заново', auto_sign: 'Расписаться',
+    cap_lead: 'Напишите письмо себе в будущее. Оно будет запечатано до {date}, а потом весь класс откроет его вместе.', cap_open_lead: 'Капсула открыта. Вот письма.', cap_years: 'ещё около {n} лет',
+    cap_unavailable: 'Капсула сейчас недоступна. Попробуйте позже.', cap_none: 'Никто не написал письмо.', cap_sealed_n: 'Запечатано писем: {n} из {total}', cap_written: 'Письмо запечатано',
+    cap_login: 'Откройте кабинет, чтобы написать письмо.', cap_form_label: '{name}, напишите себе в будущее', cap_ph: 'Где вы сейчас? О чём мечтаете? Что будущему вам стоит помнить об этом классе?',
+    cap_seal: 'Запечатать письмо', cap_reseal: 'Запечатать новую версию', cap_privacy: 'В приложении письма скрыты до дня открытия. Но это школьный проект, а не сейф, так что настоящие секреты не пишите.',
+    cap_yours: 'Ваше запечатанное письмо', cap_edit_after: 'Ваше письмо выше, вместе с остальными.', cap_sealed_toast: 'Письмо запечатано',
+  },
+  ja: {
+    help_q10: 'サインはどう使いますか？', help_a10: '友だちのページを開き、「サインする」を押して、指またはマウスで書きます。書き直しや削除もできます。',
+    help_q11: 'タイムカプセルとは？', help_a11: '未来の自分への手紙です。一度書くと、開封日までアプリ内で隠されます。それまでは書き直しや削除ができます。',
+    install_app: 'アプリをインストール',
+    auto_title: 'サイン', auto_canvas: 'サイン欄', auto_hint: '指でサインしてね', auto_color: 'ペンの色',
+    auto_undo: '元に戻す', auto_clear: '消す', auto_save: 'サインを残す', auto_saved: 'サインを保存しました', auto_too_long: 'サインが細かすぎます。もう少し簡単に書いてください。',
+    auto_unavailable: '今はサインを使えません。', auto_empty_me: 'まだサインがありません。友だちにお願いしてみよう。', auto_empty: 'まだ誰もサインしていません。{name}さんの最初のサインを書こう。',
+    auto_login: 'サインするにはマイページを開いてください。', auto_self: '自分のページにはサインできません。友だちが書いてくれます。', auto_redo: '書き直す', auto_sign: 'サインする',
+    cap_lead: '未来の自分に手紙を書こう。{date}まで封印され、その日にクラス全員で開きます。', cap_open_lead: 'カプセルが開きました。手紙をどうぞ。', cap_years: 'あと約{n}年',
+    cap_unavailable: '今はカプセルを使えません。あとでもう一度お試しください。', cap_none: '手紙を書いた人はいません。', cap_sealed_n: '封印された手紙：{n} / {total}通', cap_written: '封印済み',
+    cap_login: '手紙を書くにはマイページを開いてください。', cap_form_label: '{name}さん、未来の自分へ', cap_ph: '今どこにいる？ 何を願っている？ このクラスのことで、未来の自分に覚えていてほしいことは？',
+    cap_seal: '手紙を封印する', cap_reseal: '新しい内容で封印する', cap_privacy: '手紙は開封日までアプリ内で隠されます。ただしクラスのプロジェクトで金庫ではないので、本当の秘密は書かないでください。',
+    cap_yours: 'あなたの封印した手紙', cap_edit_after: 'あなたの手紙は、みんなの手紙と一緒に上にあります。', cap_sealed_toast: '手紙を封印しました',
+  },
+};
+for (const l of Object.keys(V4)) Object.assign(DICT[l], V4[l]);

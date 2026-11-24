@@ -128,6 +128,44 @@ const cloud = {
     const { error } = await sb.from('messages').update({ reactions }).eq('id', id);
     if (error) throw error;
   },
+  // Autographs: loaded per page so the home screen stays light.
+  async loadAutographs(toId) {
+    const { data, error } = await sb.from('autographs').select('from_id,to_id,ink,created_at').eq('to_id', toId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+  async saveAutograph(row) {
+    const { error } = await sb.from('autographs').upsert({ ...row, created_at: new Date().toISOString() });
+    if (error) throw error;
+  },
+  async deleteAutograph(fromId, toId) {
+    const { error } = await sb.from('autographs').delete().eq('from_id', fromId).eq('to_id', toId);
+    if (error) throw error;
+  },
+  // Time capsule: the list shows who has written; the text is only fetched for the author, or for everyone once it opens.
+  async loadCapsuleMeta() {
+    const { data, error } = await sb.from('capsules').select('author_id,updated_at');
+    if (error) throw error;
+    return data;
+  },
+  async getCapsule(id) {
+    const { data, error } = await sb.from('capsules').select('*').eq('author_id', id).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  async loadAllCapsules() {
+    const { data, error } = await sb.from('capsules').select('*').order('updated_at');
+    if (error) throw error;
+    return data;
+  },
+  async saveCapsule(row) {
+    const { error } = await sb.from('capsules').upsert({ ...row, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  },
+  async deleteCapsule(id) {
+    const { error } = await sb.from('capsules').delete().eq('author_id', id);
+    if (error) throw error;
+  },
 };
 
 // ───────── Local demo adapter ─────────
@@ -192,6 +230,38 @@ const demo = {
   async saveVote(vote) {
     const s = demo.read();
     s.votes = [...s.votes.filter((v) => !(v.voter_id === vote.voter_id && v.category === vote.category)), vote];
+    demo.write(s);
+  },
+  async loadAutographs(toId) {
+    return (demo.read().autographs || []).filter((a) => a.to_id === toId).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+  async saveAutograph(row) {
+    const s = demo.read();
+    s.autographs = [...(s.autographs || []).filter((a) => !(a.from_id === row.from_id && a.to_id === row.to_id)), { ...row, created_at: new Date().toISOString() }];
+    demo.write(s);
+  },
+  async deleteAutograph(fromId, toId) {
+    const s = demo.read();
+    s.autographs = (s.autographs || []).filter((a) => !(a.from_id === fromId && a.to_id === toId));
+    demo.write(s);
+  },
+  async loadCapsuleMeta() {
+    return (demo.read().capsules || []).map(({ author_id, updated_at }) => ({ author_id, updated_at }));
+  },
+  async getCapsule(id) {
+    return (demo.read().capsules || []).find((c) => c.author_id === id) || null;
+  },
+  async loadAllCapsules() {
+    return demo.read().capsules || [];
+  },
+  async saveCapsule(row) {
+    const s = demo.read();
+    s.capsules = [...(s.capsules || []).filter((c) => c.author_id !== row.author_id), { ...row, updated_at: new Date().toISOString() }];
+    demo.write(s);
+  },
+  async deleteCapsule(id) {
+    const s = demo.read();
+    s.capsules = (s.capsules || []).filter((c) => c.author_id !== id);
     demo.write(s);
   },
 };
