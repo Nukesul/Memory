@@ -16,6 +16,7 @@ import Play from './views/Play';
 import Book from './views/Book';
 import Help from './views/Help';
 import Capsule from './views/Capsule';
+import Admin from './views/Admin';
 import NotFound from './views/NotFound';
 
 const NAV = [
@@ -24,7 +25,7 @@ const NAV = [
   { to: 'gallery', icon: 'photo', key: 'nav_album', match: ['gallery', 'wall', 'book'] },
   { to: 'chat', icon: 'chat', key: 'nav_chat', match: ['chat'], badge: true },
   { to: 'play', icon: 'game', key: 'nav_play', match: ['play'] },
-  { to: 'me', icon: 'user', key: 'nav_me', match: ['me', 'capsule'] },
+  { to: 'me', icon: 'user', key: 'nav_me', match: ['me', 'capsule', 'admin'] },
 ];
 
 function Shell() {
@@ -34,7 +35,7 @@ function Shell() {
     document.documentElement.style.setProperty('--banner', cloud ? '0px' : '56px');
   }, [cloud]);
   useEffect(() => {
-    const key = { people: 'nav_people', p: 'nav_people', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book', chat: 'nav_chat', play: 'play_title', me: 'nav_me', help: 'help_title', capsule: 'capsule' }[section];
+    const key = { people: 'nav_people', p: 'nav_people', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book', chat: 'nav_chat', play: 'play_title', me: 'nav_me', help: 'help_title', capsule: 'capsule', admin: 'admin_title' }[section];
     document.title = `${key ? t(key) + ' · ' : ''}Class 2J · Memoris`;
   }, [section, t]);
   const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
@@ -63,6 +64,7 @@ function Shell() {
   else if (section === 'book') view = <Book />;
   else if (section === 'help') view = <Help />;
   else if (section === 'capsule') view = <Capsule />;
+  else if (section === 'admin') view = <Admin />;
   else if (section && section !== 'home') view = <NotFound />;
   else view = <Home />;
 

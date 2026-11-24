@@ -46,15 +46,16 @@ const toDataUrl = (blob) =>
 // ───────── Supabase adapter ─────────
 const cloud = {
   async load() {
-    const [p, n, v] = await Promise.all([
+    const [p, n, v, a] = await Promise.all([
       sb.from('profiles').select('id,filled,data,updated_at'),
       sb.from('notes').select('*').order('created_at', { ascending: false }).limit(300),
       sb.from('votes').select('voter_id,category,target_id'),
+      sb.from('announcements').select('id,text,created_at').order('created_at', { ascending: false }).limit(5),
     ]);
     if (p.error) throw p.error;
     if (n.error) throw n.error;
     // Votes are optional: the site still works if the table is missing.
-    return { profiles: Object.fromEntries(p.data.map((r) => [r.id, r])), notes: n.data, votes: v.error ? [] : v.data };
+    return { profiles: Object.fromEntries(p.data.map((r) => [r.id, r])), notes: n.data, votes: v.error ? [] : v.data, announcements: a.error ? [] : a.data };
   },
   async saveProfile(id, data, filled) {
     const row = { id, data, filled, updated_at: new Date().toISOString() };
@@ -166,12 +167,48 @@ const cloud = {
     const { error } = await sb.from('capsules').delete().eq('author_id', id);
     if (error) throw error;
   },
+  // Instant chat: any change to `messages` is a signal to reload. The payload is ignored on purpose.
+  subscribeMessages(onChange) {
+    const ch = sb
+      .channel('memoris-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => onChange())
+      .subscribe();
+    return () => {
+      sb.removeChannel(ch);
+    };
+  },
+  // Admin: every call carries the PIN, and the database checks it.
+  async admin(fn, args = {}) {
+    const { data, error } = await sb.rpc(fn, args);
+    if (error) throw error;
+    return data;
+  },
+  async adminLoadChat() {
+    const { data, error } = await sb.from('messages').select('*').is('to_id', null).order('created_at', { ascending: false }).limit(100);
+    if (error) throw error;
+    return data;
+  },
+  async adminBackup() {
+    const t = async (name, cols = '*') => {
+      const { data, error } = await sb.from(name).select(cols);
+      if (error) throw error;
+      return data;
+    };
+    return {
+      profiles: await t('profiles'),
+      notes: await t('notes'),
+      votes: await t('votes'),
+      class_chat: (await t('messages')).filter((m) => m.to_id == null),
+      announcements: await t('announcements'),
+      capsule_writers: await t('capsules', 'author_id,updated_at'),
+    };
+  },
 };
 
 // ───────── Local demo adapter ─────────
 const DEMO_KEY = 'memoris:demo';
 const demo = {
-  read: () => ({ votes: [], ...ls.get(DEMO_KEY, { profiles: {}, notes: [] }) }),
+  read: () => ({ votes: [], announcements: [], ...ls.get(DEMO_KEY, { profiles: {}, notes: [] }) }),
   write(v) {
     if (!ls.set(DEMO_KEY, v)) throw new Error('storage-full');
   },
@@ -263,6 +300,39 @@ const demo = {
     const s = demo.read();
     s.capsules = (s.capsules || []).filter((c) => c.author_id !== id);
     demo.write(s);
+  },
+  subscribeMessages(onChange) {
+    const h = (e) => e.key === DEMO_KEY && onChange();
+    window.addEventListener('storage', h);
+    return () => window.removeEventListener('storage', h);
+  },
+  // Demo mode has no server, so the admin PIN is simply 123456.
+  async admin(fn, args = {}) {
+    const ok = (args.p_pin || '') === '123456';
+    const s = demo.read();
+    if (!ok) return { ok: false };
+    if (fn === 'admin_post') {
+      s.announcements = [{ id: Date.now(), text: args.p_text, created_at: new Date().toISOString() }, ...(s.announcements || [])];
+      demo.write(s);
+    } else if (fn === 'admin_remove_announcement') {
+      s.announcements = (s.announcements || []).filter((a) => a.id !== args.p_id);
+      demo.write(s);
+    } else if (fn === 'admin_stats') {
+      const prof = Object.values(s.profiles || {});
+      return {
+        ok: true, profiles: prof.length, filled: prof.filter((p) => p.filled).length, notes: s.notes.length,
+        messages: (s.messages || []).length, votes: s.votes.length, autographs: (s.autographs || []).length, capsules: (s.capsules || []).length,
+        photo_files: 0, photo_bytes: 0, db_bytes: JSON.stringify(s).length,
+      };
+    }
+    return { ok: true };
+  },
+  async adminLoadChat() {
+    return (demo.read().messages || []).filter((m) => m.to_id == null).reverse();
+  },
+  async adminBackup() {
+    const s = demo.read();
+    return { profiles: Object.values(s.profiles || {}), notes: s.notes, votes: s.votes, class_chat: (s.messages || []).filter((m) => m.to_id == null), announcements: s.announcements || [], capsule_writers: (s.capsules || []).map((c) => ({ author_id: c.author_id, updated_at: c.updated_at })) };
   },
 };
 

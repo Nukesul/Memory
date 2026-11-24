@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../app-context';
-import { COUNTRY_ORDER, FIELDS, FUN_FIELDS, MAX_PHOTOS } from '../config';
+import { ADMIN_ID, COUNTRY_ORDER, FIELDS, FUN_FIELDS, MAX_PHOTOS } from '../config';
 import { byId, matchNames } from '../roster';
 import { sampleFor } from '../samples';
 import { asset, buildPerson, completion } from '../people';
@@ -262,6 +262,7 @@ function Editor({ p }) {
         </div>
         <div className="cab-actions">
           <a className="btn btn-ghost btn-small" href={href(`p/${p.id}`)}>{t('view_page')}</a>
+          {p.id === ADMIN_ID && <a className="btn btn-small" href={href('admin')}><Icon name="lock" size={16} /> {t('admin_title')}</a>}
           <button className="btn btn-ghost btn-small" onClick={() => { flush().then(logout); }}>{t('logout')}</button>
         </div>
       </header>

@@ -115,3 +115,27 @@ create policy "capsules read" on public.capsules for select to anon, authenticat
 create policy "capsules insert" on public.capsules for insert to anon, authenticated with check (true);
 create policy "capsules update" on public.capsules for update to anon, authenticated using (true) with check (true);
 create policy "capsules delete" on public.capsules for delete to anon, authenticated using (true);
+
+-- ───────── Admin: PIN is stored hashed and is not readable by anon ─────────
+-- Run once, then set the PIN separately (not in a migration):
+--   insert into public.admin_secret(id, pin_hash) values (1, extensions.crypt('YOUR-PIN', extensions.gen_salt('bf')));
+create extension if not exists pgcrypto with schema extensions;
+create table if not exists public.admin_secret (
+  id int primary key default 1 check (id = 1),
+  pin_hash text not null,
+  fails int not null default 0,
+  locked_until timestamptz
+);
+alter table public.admin_secret enable row level security;
+
+-- Announcements: everyone reads, only admin_post() (needs the PIN) writes.
+create table if not exists public.announcements (
+  id bigint generated always as identity primary key,
+  text text not null check (char_length(text) between 1 and 300),
+  created_at timestamptz not null default now()
+);
+alter table public.announcements enable row level security;
+create policy "announcements read" on public.announcements for select to anon, authenticated using (true);
+-- Functions admin_check / admin_post / admin_remove_announcement / admin_change_pin / admin_stats
+-- were applied as the migration "admin_announcements_realtime". After 5 wrong PINs the admin is locked for 15 minutes.
+-- Realtime for the chat: alter publication supabase_realtime add table public.messages;

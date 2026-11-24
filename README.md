@@ -69,3 +69,9 @@ npm run dev
 - **Time capsule** (`#/capsule`): one letter per person in `capsules`, hidden in the app until graduation + `CLASS.capsuleYears`. The list only reads who has written; texts are fetched for the author, or for everyone after the opening date. It is a class project, not a vault: RLS is open, so don't write real secrets.
 - **Install**: `manifest.webmanifest`, PNG icons and `sw.js` (app shell works offline; data always comes from the network). Chrome shows an install button in the footer; iPhone uses Share → Add to Home Screen.
 - Run the new tables from `supabase/schema.sql` (autographs, capsules) in the Supabase SQL editor.
+
+## Admin and instant chat
+
+- **Admin** (`#/admin`, only for the class admin, id in `ADMIN_ID`): needs the PIN. The PIN is stored as a bcrypt hash in `admin_secret` (anon cannot read it), checked by the `admin_*` functions, and 5 wrong tries lock it for 15 minutes. Announcements can only be written through `admin_post`. Demo mode uses PIN `123456`.
+- Panel: overview with storage meters (free plan: 1 GB photos, 500 MB database), announcements, moderation of notes and class chat, page reset, JSON backup, PIN change. The backup leaves out private messages and capsule letters.
+- **Instant chat**: Supabase Realtime on `messages`; the 4s/30s polling stays as a fallback.

@@ -19,6 +19,10 @@ export function capsuleOpenDate() {
 
 export const CAPSULE_MAX = 1200;
 
+/** The class admin (Nursultan Bekov). The admin panel also needs the PIN, which the database checks. */
+export const ADMIN_ID = 2;
+export const ANNOUNCE_MAX = 300;
+
 export const COUNTRIES = {
   KG: { en: 'Kyrgyzstan', ru: 'Кыргызстан', ja: 'キルギス' },
   ID: { en: 'Indonesia', ru: 'Индонезия', ja: 'インドネシア' },

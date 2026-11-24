@@ -77,6 +77,7 @@ export function AppProvider({ children }) {
     profiles: cached?.profiles || {},
     notes: cached?.notes || [],
     votes: cached?.votes || [],
+    announcements: cached?.announcements || [],
     status: cached ? 'ready' : 'loading',
   });
   const lastLoad = useRef(0);
@@ -85,7 +86,7 @@ export function AppProvider({ children }) {
     try {
       const d = await api.load();
       if (CLOUD) ls.set('memoris:cache', d);
-      setState({ profiles: d.profiles, notes: d.notes, votes: d.votes || [], status: 'ready' });
+      setState({ profiles: d.profiles, notes: d.notes, votes: d.votes || [], announcements: d.announcements || [], status: 'ready' });
     } catch (e) {
       console.error(e);
       setState((s) => (s.status === 'ready' ? s : { ...s, status: 'error' }));
@@ -139,7 +140,7 @@ export function AppProvider({ children }) {
     const row = await api.saveProfile(id, clean, isFilled(clean));
     setState((s) => {
       const profiles = { ...s.profiles, [id]: row };
-      if (CLOUD) ls.set('memoris:cache', { profiles, notes: s.notes, votes: s.votes });
+      if (CLOUD) ls.set('memoris:cache', { profiles, notes: s.notes, votes: s.votes, announcements: s.announcements });
       return { ...s, profiles };
     });
     return row;
@@ -184,6 +185,19 @@ export function AppProvider({ children }) {
       }
     }, 2000);
     return () => clearInterval(id);
+  }, [meId, refreshChat]);
+  // Instant delivery: the server tells us when anything in the chat changes. Polling above stays as the backup.
+  useEffect(() => {
+    if (!meId) return undefined;
+    let timer = null;
+    const off = api.subscribeMessages(() => {
+      clearTimeout(timer);
+      timer = setTimeout(refreshChat, 150);
+    });
+    return () => {
+      clearTimeout(timer);
+      off();
+    };
   }, [meId, refreshChat]);
   const markSeen = useCallback((room) => {
     setSeen((s) => {

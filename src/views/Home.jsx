@@ -91,6 +91,8 @@ export default function Home() {
 
       {me && <ForYou />}
 
+      <Announcements />
+
       {reel.length >= 6 && (
         <section className="reel-sec" aria-label={t('reel_title')}>
           <div className="section-head">
@@ -309,6 +311,25 @@ function ForYou() {
 }
 
 /** What happened lately: updated pages and new notes. */
+function Announcements() {
+  const { t, lang, state } = useApp();
+  const list = state.announcements.slice(0, 2);
+  if (!list.length) return null;
+  return (
+    <section className="announce" aria-label={t('announce_title')}>
+      {list.map((a, i) => (
+        <article key={a.id} className={`announce-card ${i ? 'old' : ''}`}>
+          <span className="announce-ico" aria-hidden="true">📣</span>
+          <div>
+            <p>{a.text}</p>
+            <time>{t('announce_from')} · {rel(lang, a.created_at)}</time>
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 function News() {
   const { t, lang, people, state, person } = useApp();
   const items = useMemo(() => {
