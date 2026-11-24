@@ -1,9 +1,22 @@
 {
+  "id": "./",
   "name": "Class 2J · Memoris",
   "short_name": "Memoris",
+  "description": "Our class memory book — Nippon Academy, class 2J.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#1f3b34",
-  "theme_color": "#1f3b34",
-  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "orientation": "portrait",
+  "background_color": "#ffd23f",
+  "theme_color": "#1c1a3a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Chat", "url": "./#/chat", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Play", "url": "./#/play", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
 }
