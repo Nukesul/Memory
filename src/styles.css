@@ -471,7 +471,7 @@ h1, h2, h3, legend { word-spacing: 0.1em; }
   position: relative; display: grid; gap: 8px; overflow: hidden; isolation: isolate;
   min-height: 560px; padding: 26px 18px 0; border: 3px solid var(--ink); border-radius: 30px; box-shadow: 6px 6px 0 var(--ink);
   background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bot) 78%);
-  align-content: start;
+  align-content: start; grid-template-columns: minmax(0, 1fr);
 }
 [data-theme='dark'] .hero { border-color: var(--edge); }
 .scene-sky { position: absolute; left: 0; right: 0; bottom: 24px; width: 100%; height: 56%; z-index: -1; }
@@ -505,7 +505,7 @@ h1, h2, h3, legend { word-spacing: 0.1em; }
 .hero-progress p { margin-top: 6px; font-weight: 700; font-size: 0.92rem; color: var(--ink); background: rgb(255 255 255 / 0.75); display: inline-block; padding: 0 8px; border-radius: 6px; }
 [data-theme='dark'] .hero-progress p { background: rgb(7 6 26 / 0.55); color: #fff; }
 .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
-.hero-pola { position: relative; z-index: 1; display: flex; justify-content: center; gap: 10px; padding: 18px 0 30px; }
+.hero-pola { position: relative; z-index: 1; display: flex; justify-content: center; gap: 10px; padding: 18px 0 30px; min-width: 0; overflow: hidden; }
 .hp { display: block; width: min(86px, 21vw); padding: 5px 5px 7px; background: #fff; border: 2.5px solid var(--ink); border-radius: 4px; box-shadow: 3px 3px 0 var(--ink); text-decoration: none; color: var(--ink); transform: rotate(var(--r, 0deg)); }
 .hp img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 20%; }
 .hp span { display: block; margin-top: 3px; font: 700 0.95rem/1 var(--hand); text-align: center; }
