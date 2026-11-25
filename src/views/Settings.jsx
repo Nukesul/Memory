@@ -134,7 +134,7 @@ function PasswordForm() {
       {err && <p className="form-error" role="alert">{err}</p>}
       <div className="row-actions">
         <button className="btn" disabled={busy || !pw || !pw2}>{busy ? t('auth_signing') : t('reset_save')}</button>
-        <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('today_cancel')}</button>
+        <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('cancel')}</button>
       </div>
     </form>
   );

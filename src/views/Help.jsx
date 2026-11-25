@@ -2,7 +2,7 @@ import { useApp } from '../app-context';
 import { href } from '../router';
 import { Icon } from '../components/Icons';
 
-const N = 14;
+const N = 13;
 
 export default function Help() {
   const { t } = useApp();

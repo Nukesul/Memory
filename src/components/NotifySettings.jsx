@@ -2,7 +2,7 @@ import { useApp } from '../app-context';
 import { isIOS, isStandalone } from '../push';
 import { Icon } from './Icons';
 
-const KEYS = ['dm', 'class', 'notes', 'news', 'daily'];
+const KEYS = ['dm', 'class', 'notes', 'news'];
 
 /** Notification switches in the cabinet. */
 export function NotifySettings({ bare = false }) {

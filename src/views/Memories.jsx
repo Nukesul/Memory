@@ -5,13 +5,12 @@ import { href } from '../router';
 import { Desk } from '../components/Desk';
 import { Flag } from '../components/Flag';
 import { RowLink } from '../components/ui';
-import { RandomMemory } from './Home';
 
 const DAY = 864e5;
 
 /** The class archive: everything that is about 2J as a class rather than today's news. */
 export default function Memories() {
-  const { t, lang, people, state, streak, country } = useApp();
+  const { t, lang, people, state, country } = useApp();
   const seats = SEATING.map((id) => people.find((p) => p.id === id));
   const grad = new Date(`${CLASS.graduation}T09:00:00+09:00`);
   const days = Math.round((grad - Date.now()) / DAY);
@@ -34,10 +33,8 @@ export default function Memories() {
         <RowLink to="gallery" icon="photo" title={t('nav_gallery')} note={t('stat_photos_n', { n: photoCount })} />
         <RowLink to="wall" icon="note" title={t('wall_title')} note={t('stat_notes_n', { n: state.notes.length })} />
         <RowLink to="book" icon="book" title={t('tab_book')} note={t('mem_book_note')} />
-        <RowLink to="today" icon="flame" title={t('today_q_label')} note={streak ? t('streak_n', { n: streak }) : t('streak_0')} />
         <RowLink to="capsule" icon="capsule" title={t('capsule')} note={t('mem_capsule_note', { date: fmt.format(capsuleOpenDate()) })} />
-        <RowLink to="play/awards" icon="trophy" title={t('mem_awards')} note={t('mem_awards_note')} />
-        <RowLink to="play" icon="game" title={t('play_title')} note={t('mem_games_note')} />
+        <RowLink to="awards" icon="trophy" title={t('mem_awards')} note={t('mem_awards_note')} />
         <RowLink to="explore" icon="pen" title={t('mem_autographs')} note={t('mem_autographs_note')} />
       </div>
 
@@ -76,8 +73,6 @@ export default function Memories() {
           })}
         </ul>
       </section>
-
-      <RandomMemory />
 
       <section className="panel numbers" aria-label={t('mem_numbers')}>
         {[

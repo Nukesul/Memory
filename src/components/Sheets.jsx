@@ -15,11 +15,10 @@ export function SheetHost() {
 
 /** The + button: every option here works today. */
 function CreateSheet({ onClose }) {
-  const { t, myAnswer } = useApp();
+  const { t } = useApp();
   const items = [
     { to: 'me/edit/photos', icon: 'photo', title: t('create_photo'), note: t('create_photo_sub') },
     { to: 'wall', icon: 'note', title: t('create_note'), note: t('create_note_sub') },
-    { to: 'today', icon: 'flame', title: t('create_daily'), note: myAnswer ? t('today_card_done') : t('create_daily_sub') },
     { to: 'capsule', icon: 'capsule', title: t('create_capsule'), note: t('create_capsule_sub') },
     { to: 'explore', icon: 'pen', title: t('mem_autographs'), note: t('mem_autographs_note') },
   ];

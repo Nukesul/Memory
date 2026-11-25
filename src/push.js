@@ -1,7 +1,7 @@
 import { CLOUD, api, ls } from './store';
 import { VAPID_PUBLIC } from './config';
 
-export const DEFAULT_PREFS = { dm: true, class: true, notes: true, news: true, daily: true };
+export const DEFAULT_PREFS = { dm: true, class: true, notes: true, news: true };
 
 export const isStandalone = () =>
   Boolean(window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true);

@@ -126,7 +126,7 @@ const timeFmt = (lang, iso) => {
 };
 
 function Thread({ room, me, people, markSeen }) {
-  const { t, lang, chat, sendMessage, editMessage, deleteMessage, reactMessage, toast, presence } = useApp();
+  const { t, lang, chat, sendMessage, editMessage, deleteMessage, reactMessage, toast, presence, refreshChat } = useApp();
   const toId = room === 'all' ? null : Number(room);
   const other = toId ? people.find((p) => p.id === toId) : null;
   const msgs = useMemo(
@@ -228,6 +228,7 @@ function Thread({ room, me, people, markSeen }) {
       setEditing(null);
     } catch {
       toast(t('chat_err'), 'err');
+      refreshChat(); // show what the server really has
     }
   };
   const remove = async (id) => {
@@ -235,6 +236,7 @@ function Thread({ room, me, people, markSeen }) {
       await deleteMessage(id);
     } catch {
       toast(t('chat_err'), 'err');
+      refreshChat();
     }
     setConfirm(null);
   };

@@ -2,9 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api, auth, clearLocalData, CLOUD, ls } from './store';
 import { currentSubscription, disablePush, enablePush, getPrefs, isIOS, isStandalone, pushPermission, pushSupported, savePrefs, syncPush } from './push';
 import { DICT } from './i18n';
-import { AWARDS, COUNTRIES, DAILY_MAX } from './config';
-import { BADGES, bestStreak, dayKey, questionFor, streakOf } from './daily';
-import { buildAll, completion, isFilled } from './people';
+import { COUNTRIES } from './config';
+import { buildAll, isFilled } from './people';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -234,44 +233,6 @@ export function AppProvider({ children }) {
     setState((s) => ({ ...s, notes: s.notes.filter((n) => n.id !== id) }));
   };
 
-  // ── daily question, streak and badges ──
-  const [daily, setDaily] = useState([]);
-  const [today, setToday] = useState(() => dayKey());
-  const refreshDaily = useCallback(async () => {
-    try {
-      const since = new Date(Date.now() - 60 * 864e5);
-      setDaily(await api.loadDaily(dayKey(since)));
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-  useEffect(() => {
-    if (!meId) return undefined;
-    refreshDaily();
-    // The day changes at midnight in Tokyo; re-check when the app comes back to the front.
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      setToday(dayKey());
-      refreshDaily();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [meId, refreshDaily]);
-  const question = useMemo(() => questionFor(today), [today]);
-  const myDays = useMemo(() => daily.filter((d) => d.person_id === meId).map((d) => d.day), [daily, meId]);
-  const myAnswer = daily.find((d) => d.person_id === meId && d.day === today) || null;
-  const streak = useMemo(() => streakOf(myDays, today), [myDays, today]);
-  const todayAnswers = useMemo(() => daily.filter((d) => d.day === today).sort((a, b) => b.created_at.localeCompare(a.created_at)), [daily, today]);
-  const answerDaily = async ({ mood, text }) => {
-    const row = { day: today, person_id: meId, mood: mood || null, text: (text || '').trim().slice(0, DAILY_MAX) };
-    await api.saveDaily(row);
-    setDaily((l) => [{ ...row, created_at: new Date().toISOString() }, ...l.filter((d) => !(d.day === today && d.person_id === meId))]);
-  };
-  const removeDaily = async () => {
-    await api.deleteDaily(today, meId);
-    setDaily((l) => l.filter((d) => !(d.day === today && d.person_id === meId)));
-  };
-
   // ── chat ──
   const [chat, setChat] = useState([]);
   const [seen, setSeen] = useState(() => ls.get('memoris:seen', {}));
@@ -397,19 +358,6 @@ export function AppProvider({ children }) {
     return by;
   }, [chat, seen, meId]);
 
-  const me0 = people.find((p) => p.id === meId) || null;
-  const badges = useMemo(() => {
-    if (!me0) return [];
-    const stats = {
-      best: bestStreak(myDays),
-      profileDone: (() => { const c = completion({ ...me0.data, avatar: me0.avatar, photos: me0.photos }); return c.done >= c.total; })(),
-      notes: state.notes.filter((n) => n.from_id === meId).length,
-      votes: new Set(state.votes.filter((v) => v.voter_id === meId).map((v) => v.category)).size,
-      awards: AWARDS.length,
-    };
-    return BADGES.map((b) => ({ id: b.id, icon: b.icon, got: b.test(stats) }));
-  }, [me0, myDays, state.notes, state.votes, meId]);
-
   // The service worker tells us about pushes (refresh quietly) and notification taps (open the right page).
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined;
@@ -449,7 +397,7 @@ export function AppProvider({ children }) {
     cloud: CLOUD, canInstall: Boolean(installEvt), install,
     sheet, openSheet: setSheet, closeSheet: () => setSheet(null), installPending, pushPending, pushSupportedNow,
     pushInfo, enableNotifications, disableNotifications, setPushPref, standalone,
-    presence, daily, today, question, myAnswer, streak, todayAnswers, answerDaily, removeDaily, refreshDaily, badges,
+    presence,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

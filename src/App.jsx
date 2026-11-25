@@ -10,12 +10,11 @@ import Gallery from './views/Gallery';
 import Wall from './views/Wall';
 import Me from './views/Me';
 import Chat from './views/Chat';
-import Play from './views/Play';
+import Awards from './views/Awards';
 import Book from './views/Book';
 import Help from './views/Help';
 import Capsule from './views/Capsule';
 import Admin from './views/Admin';
-import Today from './views/Today';
 import Explore from './views/Explore';
 import Memories from './views/Memories';
 import Settings from './views/Settings';
@@ -25,10 +24,10 @@ import { InviteFlow, SignIn, Splash } from './views/Auth';
 
 const ROUTE_TITLE = {
   explore: 'nav_explore', people: 'nav_explore', p: 'nav_explore', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book',
-  chat: 'nav_messages', play: 'play_title', me: 'nav_profile', help: 'help_title', capsule: 'capsule', admin: 'admin_title',
-  today: 'today_title', memories: 'nav_memories', settings: 'nav_settings',
+  chat: 'nav_messages', awards: 'mem_awards', me: 'nav_profile', help: 'help_title', capsule: 'capsule', admin: 'admin_title',
+  memories: 'nav_memories', settings: 'nav_settings',
 };
-const MEMORY_ROUTES = ['memories', 'gallery', 'wall', 'book', 'capsule', 'today', 'play', 'help'];
+const MEMORY_ROUTES = ['memories', 'gallery', 'wall', 'book', 'capsule', 'awards', 'today', 'play', 'help'];
 
 /** Which main tab a route belongs to. */
 function tabFor(section, arg, meId) {
@@ -90,12 +89,12 @@ function Shell() {
   else if (section === 'settings') view = <Settings />;
   else if (section === 'memories') view = <Memories />;
   else if (section === 'chat') view = <Chat room={arg} />;
-  else if (section === 'play') view = <Play tab={arg} />;
+  else if (section === 'awards' || (section === 'play' && arg === 'awards')) view = <Awards />;
+  else if (section === 'play' || section === 'today') view = <Memories />;
   else if (section === 'book') view = <Book />;
   else if (section === 'help') view = <Help />;
   else if (section === 'capsule') view = <Capsule />;
   else if (section === 'admin') view = <Admin />;
-  else if (section === 'today') view = <Today />;
   else if (section && section !== 'home') view = <NotFound />;
   else view = <Home />;
 

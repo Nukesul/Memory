@@ -6,7 +6,6 @@ import { href } from '../router';
 import { Icon } from '../components/Icons';
 import { Avatar } from '../components/Avatar';
 import { firstName } from '../roster';
-import { Checklist, DailyCard } from '../components/Daily';
 
 const DAY = 864e5;
 const ONLINE_MS = 150000;
@@ -57,8 +56,6 @@ export default function Home() {
       </section>
 
       <Announcements />
-      {me && <DailyCard compact />}
-      {me && <Checklist />}
 
       <section className="home-sec" aria-labelledby="new-photos">
         <div className="sec-head">
@@ -113,42 +110,6 @@ export function Birthdays({ soon = false }) {
       ) : (
         <p className="muted">{t('bday_none')}</p>
       )}
-    </section>
-  );
-}
-
-export function RandomMemory() {
-  const { t, lang, people } = useApp();
-  const pool = useMemo(() => people.filter((p) => p.filled && (p.data.memory || p.data.quote)), [people]);
-  const [pick, setPick] = useState(null);
-  const roll = () => {
-    if (!pool.length) return setPick({ ex: true });
-    const next = pool[Math.floor(Math.random() * pool.length)];
-    setPick({ p: next, key: next.data.memory ? 'memory' : 'quote' });
-  };
-  const ex = pick?.ex ? { text: sampleFor(1, lang).memory } : null;
-  return (
-    <section className="panel memory-roll">
-      <h2>{t('random_title')}</h2>
-      {pick ? (
-        <figure className="roll-card" key={pick.p?.id || 'ex'}>
-          <blockquote>{pick.p ? pick.p.data[pick.key] : ex.text}</blockquote>
-          <figcaption>
-            {pick.p ? (
-              <a href={href(`p/${pick.p.id}`)}>
-                <Avatar p={pick.p} className="mini" /> {pick.p.name}
-              </a>
-            ) : (
-              <span className="ex-tag">{t('example')}</span>
-            )}
-          </figcaption>
-        </figure>
-      ) : (
-        <p className="muted">{t('random_hint')}</p>
-      )}
-      <button className="btn btn-ghost" onClick={roll}>
-        <Icon name="shuffle" size={18} /> {pick ? t('random_again') : t('random_btn')}
-      </button>
     </section>
   );
 }

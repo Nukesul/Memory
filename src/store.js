@@ -209,15 +209,19 @@ const cloud = {
     if (error) throw error;
     return data;
   },
+  // Both check that the database really changed a row: with row level security a refused
+  // change is not an error, it just touches nothing, and the screen must not pretend otherwise.
   async editMessage(id, text) {
     const edited_at = new Date().toISOString();
-    const { error } = await sb.from('messages').update({ text, edited_at }).eq('id', id);
+    const { data, error } = await sb.from('messages').update({ text, edited_at }).eq('id', id).select('id');
     if (error) throw error;
+    if (!data?.length) throw new Error('not_changed');
     return edited_at;
   },
   async deleteMessage(id) {
-    const { error } = await sb.from('messages').delete().eq('id', id);
+    const { data, error } = await sb.from('messages').delete().eq('id', id).select('id');
     if (error) throw error;
+    if (!data?.length) throw new Error('not_changed');
   },
   // Reactions go through a function: it only toggles my own id on a message I can see.
   async reactMessage(id, reactions, emoji) {
@@ -314,19 +318,6 @@ const cloud = {
     if (error) throw error;
   },
   // Daily question: everyone's answers for the last weeks (about 20 people x 45 days).
-  async loadDaily(sinceDay) {
-    const { data, error } = await sb.from('daily_answers').select('day,person_id,mood,text,created_at').gte('day', sinceDay).order('day', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-  async saveDaily(row) {
-    const { error } = await sb.from('daily_answers').upsert(row);
-    if (error) throw error;
-  },
-  async deleteDaily(day, personId) {
-    const { error } = await sb.from('daily_answers').delete().eq('day', day).eq('person_id', personId);
-    if (error) throw error;
-  },
   async touchPresence(id) {
     const { error } = await sb.from('presence').upsert({ person_id: id, seen_at: new Date().toISOString() });
     if (error) throw error;
@@ -474,19 +465,6 @@ const demo = {
   async savePushSub() {},
   async updatePushPrefs() {},
   async removePushSub() {},
-  async loadDaily(sinceDay) {
-    return (demo.read().daily || []).filter((d) => d.day >= sinceDay).sort((a, b) => b.day.localeCompare(a.day));
-  },
-  async saveDaily(row) {
-    const s = demo.read();
-    s.daily = [...(s.daily || []).filter((d) => !(d.day === row.day && d.person_id === row.person_id)), { ...row, created_at: new Date().toISOString() }];
-    demo.write(s);
-  },
-  async deleteDaily(day, personId) {
-    const s = demo.read();
-    s.daily = (s.daily || []).filter((d) => !(d.day === day && d.person_id === personId));
-    demo.write(s);
-  },
   async touchPresence(id) {
     const s = demo.read();
     s.presence = { ...(s.presence || {}), [id]: new Date().toISOString() };
