@@ -139,3 +139,12 @@ create policy "announcements read" on public.announcements for select to anon, a
 -- Functions admin_check / admin_post / admin_remove_announcement / admin_change_pin / admin_stats
 -- were applied as the migration "admin_announcements_realtime". After 5 wrong PINs the admin is locked for 15 minutes.
 -- Realtime for the chat: alter publication supabase_realtime add table public.messages;
+
+-- ───────── Push notifications, daily question, presence, chat replies ─────────
+-- Applied as the migration "push_daily_presence_replies": messages.reply_to; push_subs (no policies, written only by
+-- save_push_sub / update_push_prefs / remove_push_sub); push_config (url, secret, vapid_* — no policies);
+-- notify_push() triggers on messages, notes, announcements → pg_net → Edge Function "push-notify" (supabase/functions/push-notify);
+-- pg_cron jobs push-daily (20:00 JST) and push-streak (21:45 JST); daily_answers; presence.
+-- Fill push_config once (not in a migration):
+--   insert into public.push_config(key, value) values ('url', 'https://<ref>.supabase.co/functions/v1/push-notify'),
+--     ('secret', '<random>'), ('vapid_public', '...'), ('vapid_private', '...'), ('vapid_subject', 'https://your.site/');

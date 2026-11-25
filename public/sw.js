@@ -1,5 +1,5 @@
 /* Memoris service worker: the app shell opens offline; data always comes from the network. */
-const CACHE = 'memoris-v1';
+const CACHE = 'memoris-v2';
 const SHELL = ['./', './favicon.svg', './manifest.webmanifest', './icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -46,5 +46,50 @@ self.addEventListener('fetch', (e) => {
         .catch(() => hit);
       return hit || fresh;
     }),
+  );
+});
+
+// ───────── Web Push ─────────
+self.addEventListener('push', (e) => {
+  let d = {};
+  try {
+    d = e.data ? e.data.json() : {};
+  } catch {
+    d = { body: e.data ? e.data.text() : '' };
+  }
+  e.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      // The app is open and visible: update it quietly instead of showing a banner.
+      if (wins.some((w) => w.visibilityState === 'visible')) {
+        wins.forEach((w) => w.postMessage({ type: 'push', url: d.url }));
+        return;
+      }
+      await self.registration.showNotification(d.title || 'Memoris', {
+        body: d.body || '',
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        tag: d.tag,
+        renotify: Boolean(d.tag),
+        data: { url: d.url || '#/' },
+      });
+    })(),
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const hash = (e.notification.data && e.notification.data.url) || '#/';
+  e.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const mine = wins.find((w) => w.url.startsWith(self.registration.scope));
+      if (mine) {
+        mine.postMessage({ type: 'goto', hash });
+        await mine.focus();
+      } else {
+        await self.clients.openWindow(new URL(hash, self.registration.scope).href);
+      }
+    })(),
   );
 });

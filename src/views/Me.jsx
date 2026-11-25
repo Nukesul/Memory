@@ -11,6 +11,7 @@ import { Sheet } from '../components/Sheet';
 import { Avatar } from '../components/Avatar';
 import { Flag } from '../components/Flag';
 import { Icon } from '../components/Icons';
+import { NotifySettings } from '../components/NotifySettings';
 
 export default function Me() {
   const { me, meId, logout } = useApp();
@@ -398,6 +399,8 @@ function Editor({ p }) {
           <button className="btn btn-big" type="submit" disabled={status === 'saving'}>
             {t('save_now')}
           </button>
+
+          <NotifySettings />
 
           <div className="cab-tools">
             <button type="button" className="btn btn-small btn-ghost" onClick={copyLink}>

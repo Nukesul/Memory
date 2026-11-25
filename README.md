@@ -75,3 +75,10 @@ npm run dev
 - **Admin** (`#/admin`, only for the class admin, id in `ADMIN_ID`): needs the PIN. The PIN is stored as a bcrypt hash in `admin_secret` (anon cannot read it), checked by the `admin_*` functions, and 5 wrong tries lock it for 15 minutes. Announcements can only be written through `admin_post`. Demo mode uses PIN `123456`.
 - Panel: overview with storage meters (free plan: 1 GB photos, 500 MB database), announcements, moderation of notes and class chat, page reset, JSON backup, PIN change. The backup leaves out private messages and capsule letters.
 - **Instant chat**: Supabase Realtime on `messages`; the 4s/30s polling stays as a fallback.
+
+## Daily question, streaks, notifications (v7)
+
+- **Question of the day** (`src/daily.js`): one question for the whole class, chosen by the Tokyo date. Answers live in `daily_answers`; the streak counts consecutive days (today may still be empty). Page `#/today`, card on Home, badges and leaderboard.
+- **Getting started** checklist on Home disappears when everything is done.
+- **Install / notification sheets** open on entry (install first, then notifications, then at most every 3 days). Swipe down to close. Push works on iPhone only for an installed app.
+- **Chat**: replies (`messages.reply_to`), online dot (`presence`), "new messages" jump button, clickable links.

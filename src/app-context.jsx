@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, CLOUD, ls } from './store';
+import { currentSubscription, disablePush, enablePush, getPrefs, isIOS, isStandalone, pushPermission, pushSupported, savePrefs, syncPush } from './push';
 import { DICT } from './i18n';
-import { COUNTRIES } from './config';
-import { buildAll, isFilled } from './people';
+import { AWARDS, COUNTRIES, DAILY_MAX } from './config';
+import { BADGES, bestStreak, dayKey, questionFor, streakOf } from './daily';
+import { buildAll, completion, isFilled } from './people';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -71,6 +73,18 @@ export function AppProvider({ children }) {
     setInstallEvt(null);
   };
 
+  // ── notifications and the install / notification sheets ──
+  const [pushInfo, setPushInfo] = useState(() => ({ permission: pushPermission(), subscribed: false, prefs: getPrefs() }));
+  const refreshPush = useCallback(async () => {
+    const sub = await currentSubscription();
+    setPushInfo({ permission: pushPermission(), subscribed: Boolean(sub), prefs: getPrefs() });
+  }, []);
+  const [sheet, setSheet] = useState(null);
+  const standalone = isStandalone();
+  const installPending = !standalone && (Boolean(installEvt) || isIOS());
+  const pushSupportedNow = pushSupported() && (!isIOS() || standalone);
+  const pushPending = pushSupportedNow && pushInfo.permission === 'default';
+
   // ── data ──
   const cached = CLOUD ? ls.get('memoris:cache', null) : null;
   const [state, setState] = useState({
@@ -116,6 +130,47 @@ export function AppProvider({ children }) {
   const me = people.find((p) => p.id === meId) || null;
   const person = useCallback((id) => people.find((p) => p.id === Number(id)) || null, [people]);
 
+  useEffect(() => {
+    refreshPush();
+  }, [refreshPush, meId]);
+  useEffect(() => {
+    if (meId) syncPush(meId, lang).then(refreshPush);
+  }, [meId, lang, refreshPush]);
+  const enableNotifications = async () => {
+    try {
+      const r = await enablePush(meId, lang);
+      await refreshPush();
+      return r;
+    } catch (e) {
+      console.error(e);
+      await refreshPush();
+      return 'error';
+    }
+  };
+  const disableNotifications = async () => {
+    await disablePush();
+    await refreshPush();
+  };
+  const setPushPref = async (key, value) => {
+    await savePrefs({ ...getPrefs(), [key]: value }, lang);
+    refreshPush();
+  };
+  // Ask once on entry (install first, then notifications), then at most every 3 days.
+  useEffect(() => {
+    if (!meId || state.status !== 'ready' || sheet) return undefined;
+    if (window.location.hash.startsWith('#/admin')) return undefined;
+    const gap = 3 * 864e5;
+    const mark = ls.get('memoris:sheets', {});
+    const now = Date.now();
+    const next = installPending && now - (mark.install || 0) > gap ? 'install' : pushPending && now - (mark.push || 0) > gap ? 'push' : null;
+    if (!next) return undefined;
+    const id = setTimeout(() => {
+      ls.set('memoris:sheets', { ...ls.get('memoris:sheets', {}), [next]: Date.now() });
+      setSheet(next);
+    }, 2200);
+    return () => clearTimeout(id);
+  }, [meId, state.status, sheet, installPending, pushPending]);
+
   // ── toasts ──
   const [toasts, setToasts] = useState([]);
   const toast = useCallback((text, kind = 'ok') => {
@@ -155,6 +210,44 @@ export function AppProvider({ children }) {
     setState((s) => ({ ...s, notes: s.notes.filter((n) => n.id !== id) }));
   };
 
+  // ── daily question, streak and badges ──
+  const [daily, setDaily] = useState([]);
+  const [today, setToday] = useState(() => dayKey());
+  const refreshDaily = useCallback(async () => {
+    try {
+      const since = new Date(Date.now() - 60 * 864e5);
+      setDaily(await api.loadDaily(dayKey(since)));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+  useEffect(() => {
+    if (!meId) return undefined;
+    refreshDaily();
+    // The day changes at midnight in Tokyo; re-check when the app comes back to the front.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      setToday(dayKey());
+      refreshDaily();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [meId, refreshDaily]);
+  const question = useMemo(() => questionFor(today), [today]);
+  const myDays = useMemo(() => daily.filter((d) => d.person_id === meId).map((d) => d.day), [daily, meId]);
+  const myAnswer = daily.find((d) => d.person_id === meId && d.day === today) || null;
+  const streak = useMemo(() => streakOf(myDays, today), [myDays, today]);
+  const todayAnswers = useMemo(() => daily.filter((d) => d.day === today).sort((a, b) => b.created_at.localeCompare(a.created_at)), [daily, today]);
+  const answerDaily = async ({ mood, text }) => {
+    const row = { day: today, person_id: meId, mood: mood || null, text: (text || '').trim().slice(0, DAILY_MAX) };
+    await api.saveDaily(row);
+    setDaily((l) => [{ ...row, created_at: new Date().toISOString() }, ...l.filter((d) => !(d.day === today && d.person_id === meId))]);
+  };
+  const removeDaily = async () => {
+    await api.deleteDaily(today, meId);
+    setDaily((l) => l.filter((d) => !(d.day === today && d.person_id === meId)));
+  };
+
   // ── chat ──
   const [chat, setChat] = useState([]);
   const [seen, setSeen] = useState(() => ls.get('memoris:seen', {}));
@@ -162,6 +255,7 @@ export function AppProvider({ children }) {
   const setChatFast = useCallback((v) => {
     fast.current = v;
   }, []);
+  const [presence, setPresence] = useState({});
   const refreshChat = useCallback(async () => {
     if (!meId) return;
     try {
@@ -169,6 +263,26 @@ export function AppProvider({ children }) {
     } catch (e) {
       console.error(e);
     }
+    try {
+      const rows = await api.loadPresence();
+      setPresence(Object.fromEntries(rows.map((r) => [r.person_id, r.seen_at])));
+    } catch {
+      /* presence is a nicety */
+    }
+  }, [meId]);
+  // Tell the class I am around (at most once a minute, only while the app is in front).
+  useEffect(() => {
+    if (!meId) return undefined;
+    const ping = () => {
+      if (document.visibilityState === 'visible') api.touchPresence(meId).catch(() => {});
+    };
+    ping();
+    const id = setInterval(ping, 60000);
+    document.addEventListener('visibilitychange', ping);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', ping);
+    };
   }, [meId]);
   useEffect(() => {
     if (!meId) {
@@ -206,8 +320,8 @@ export function AppProvider({ children }) {
       return next;
     });
   }, []);
-  const sendMessage = async (toId, text) => {
-    const row = await api.sendMessage({ from_id: meId, to_id: toId, text: text.trim() });
+  const sendMessage = async (toId, text, replyTo = null) => {
+    const row = await api.sendMessage({ from_id: meId, to_id: toId, text: text.trim(), ...(replyTo ? { reply_to: replyTo } : {}) });
     setChat((l) => [...l, row]);
   };
   const editMessage = async (id, text) => {
@@ -246,6 +360,43 @@ export function AppProvider({ children }) {
     return by;
   }, [chat, seen, meId]);
 
+  const me0 = people.find((p) => p.id === meId) || null;
+  const badges = useMemo(() => {
+    if (!me0) return [];
+    const stats = {
+      best: bestStreak(myDays),
+      profileDone: (() => { const c = completion({ ...me0.data, avatar: me0.avatar, photos: me0.photos }); return c.done >= c.total; })(),
+      notes: state.notes.filter((n) => n.from_id === meId).length,
+      votes: new Set(state.votes.filter((v) => v.voter_id === meId).map((v) => v.category)).size,
+      awards: AWARDS.length,
+    };
+    return BADGES.map((b) => ({ id: b.id, icon: b.icon, got: b.test(stats) }));
+  }, [me0, myDays, state.notes, state.votes, meId]);
+
+  // The service worker tells us about pushes (refresh quietly) and notification taps (open the right page).
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const onMsg = (e) => {
+      if (e.data?.type === 'goto' && typeof e.data.hash === 'string') window.location.hash = e.data.hash;
+      if (e.data?.type === 'push') {
+        refreshChat();
+        refresh();
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMsg);
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg);
+  }, [refreshChat, refresh]);
+  // Red number on the app icon when installed.
+  useEffect(() => {
+    const n = Object.values(unread).reduce((a, b) => a + b, 0);
+    try {
+      if (n > 0) navigator.setAppBadge?.(n);
+      else navigator.clearAppBadge?.();
+    } catch {
+      /* not supported */
+    }
+  }, [unread]);
+
   const vote = async (category, targetId) => {
     const row = { voter_id: meId, category, target_id: targetId };
     await api.saveVote(row);
@@ -259,6 +410,9 @@ export function AppProvider({ children }) {
     toasts, toast, box, openPhotos, closePhotos,
     saveProfile, uploadPhoto: api.uploadPhoto, removePhoto: api.removePhoto, addNote, deleteNote,
     cloud: CLOUD, canInstall: Boolean(installEvt), install,
+    sheet, openSheet: setSheet, closeSheet: () => setSheet(null), installPending, pushPending, pushSupportedNow,
+    pushInfo, enableNotifications, disableNotifications, setPushPref, standalone,
+    presence, daily, today, question, myAnswer, streak, todayAnswers, answerDaily, removeDaily, refreshDaily, badges,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

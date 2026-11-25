@@ -23,6 +23,13 @@ export const CAPSULE_MAX = 1200;
 export const ADMIN_ID = 2;
 export const ANNOUNCE_MAX = 300;
 
+/** Public half of the Web Push key pair. The private half lives only in the database (push_config). */
+export const VAPID_PUBLIC = 'BAqkToN40xfHn0b9HNXlAW_WMKkEPhEZFyVSirMXEMFdOPjnMO0DyDcAvS4jD2iXpgtO0U7MK4SPvqMbWyrROBw';
+/** The class lives in Japan: "today" for the daily question follows this time zone. */
+export const TZ = 'Asia/Tokyo';
+export const DAILY_MAX = 200;
+export const MOODS = ['😄', '🥰', '😎', '😴', '🤯', '😢'];
+
 export const COUNTRIES = {
   KG: { en: 'Kyrgyzstan', ru: 'Кыргызстан', ja: 'キルギス' },
   ID: { en: 'Indonesia', ru: 'Индонезия', ja: 'インドネシア' },

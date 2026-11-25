@@ -9,6 +9,20 @@ import { Icon } from '../components/Icons';
 const MAX = 500;
 const EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
+const ONLINE_MS = 150000;
+const isOnline = (iso) => Boolean(iso) && Date.now() - new Date(iso).getTime() < ONLINE_MS;
+
+const URL_RE = /(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])/g;
+/** Plain text with clickable links; nothing is ever injected as HTML. */
+const linkify = (text) =>
+  text.split(URL_RE).map((part, i) =>
+    i % 2 ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer nofollow">{part}</a>
+    ) : (
+      part
+    ),
+  );
+
 const dayLabel = (lang, iso, t) => {
   const d = new Date(iso);
   const today = new Date();
@@ -33,7 +47,7 @@ export default function Chat({ room: arg }) {
 }
 
 function ChatRooms({ me, arg }) {
-  const { t, people, chat, unread, setChatFast, refreshChat, markSeen } = useApp();
+  const { t, people, chat, unread, setChatFast, refreshChat, markSeen, presence } = useApp();
   const others = people.filter((p) => p.id !== me.id);
   const room = arg && (arg === 'all' || others.some((p) => String(p.id) === arg)) ? arg : null;
   const open = room || 'all'; // on wide screens the class room is shown by default
@@ -84,7 +98,10 @@ function ChatRooms({ me, arg }) {
             {ordered.map((p) => (
               <li key={p.id}>
                 <a className={`room ${open === String(p.id) ? 'on' : ''}`} href={href(`chat/${p.id}`)}>
-                  <Avatar p={p} className="mini round" />
+                  <span className="has-presence">
+                    <Avatar p={p} className="mini round" />
+                    {isOnline(presence[p.id]) && <i className="presence" title={t('chat_online')} />}
+                  </span>
                   <span className="room-info">
                     <b>{p.name}</b>
                     <small>{preview(last[p.id])}</small>
@@ -109,7 +126,7 @@ const timeFmt = (lang, iso) => {
 };
 
 function Thread({ room, me, people, markSeen }) {
-  const { t, lang, chat, sendMessage, editMessage, deleteMessage, reactMessage, toast } = useApp();
+  const { t, lang, chat, sendMessage, editMessage, deleteMessage, reactMessage, toast, presence } = useApp();
   const toId = room === 'all' ? null : Number(room);
   const other = toId ? people.find((p) => p.id === toId) : null;
   const msgs = useMemo(
@@ -133,6 +150,13 @@ function Thread({ room, me, people, markSeen }) {
   };
   const box = useRef(null);
   const stick = useRef(true);
+  const [replyTo, setReplyTo] = useState(null);
+  const [away, setAway] = useState(false); // scrolled up while new messages arrive
+  const [flash, setFlash] = useState(null);
+  const input = useRef(null);
+  const seenCount = useRef(0);
+  const lastSeen = other ? presence[other.id] : null;
+  const presenceText = !other ? null : isOnline(lastSeen) ? t('chat_online') : lastSeen ? t('chat_seen', { when: timeFmt(lang, lastSeen) }) : null;
 
   // Opening a room (and any new message while it is open) counts as read.
   useEffect(() => {
@@ -142,11 +166,34 @@ function Thread({ room, me, people, markSeen }) {
   useLayoutEffect(() => {
     const el = box.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [msgs.length, room]);
+    // A message from somebody else arrived while I was reading older ones.
+    const grew = msgs.length > seenCount.current && seenCount.current > 0;
+    if (grew && !stick.current && msgs[msgs.length - 1]?.from_id !== me.id) setAway(true);
+    seenCount.current = msgs.length;
+  }, [msgs.length, room]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onScroll = () => {
     const el = box.current;
     stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (stick.current) setAway(false);
+  };
+  const jump = () => {
+    const el = box.current;
+    stick.current = true;
+    setAway(false);
+    el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  };
+  const goTo = (id) => {
+    const el = box.current?.querySelector(`[data-mid="${id}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    setFlash(id);
+    setTimeout(() => setFlash(null), 1300);
+  };
+  const startReply = (m) => {
+    setReplyTo(m);
+    setPicker(null);
+    input.current?.focus();
   };
 
   const send = async (e) => {
@@ -156,8 +203,9 @@ function Thread({ room, me, people, markSeen }) {
     setBusy(true);
     try {
       stick.current = true;
-      await sendMessage(toId, v);
+      await sendMessage(toId, v, replyTo?.id || null);
       setText('');
+      setReplyTo(null);
     } catch (err) {
       console.error(err);
       toast(t('chat_err'), 'err');
@@ -170,6 +218,7 @@ function Thread({ room, me, people, markSeen }) {
       e.preventDefault();
       send();
     }
+    if (e.key === 'Escape' && replyTo) setReplyTo(null);
   };
   const saveEdit = async () => {
     const v = editing.text.trim();
@@ -198,10 +247,13 @@ function Thread({ room, me, people, markSeen }) {
         </a>
         {other ? (
           <a className="thread-who" href={href(`p/${other.id}`)}>
-            <Avatar p={other} className="mini round" />
+            <span className="has-presence">
+              <Avatar p={other} className="mini round" />
+              {isOnline(lastSeen) && <i className="presence" />}
+            </span>
             <span>
               <b>{other.name}</b>
-              <small><Flag code={other.country} /> {t('chat_private_note')}</small>
+              <small><Flag code={other.country} /> {presenceText || t('chat_private_note')}</small>
             </span>
           </a>
         ) : (
@@ -225,10 +277,12 @@ function Thread({ room, me, people, markSeen }) {
           const isEditing = editing?.id === m.id;
           const newDay = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
           const rx = Object.entries(m.reactions || {}).filter(([, ids]) => ids.length);
+          const quoted = m.reply_to ? chat.find((x) => x.id === m.reply_to) : null;
+          const quotedFrom = quoted ? byId(quoted.from_id) : null;
           return (
             <Fragment key={m.id}>
               {newDay && <div className="day-sep"><span>{dayLabel(lang, m.created_at, t)}</span></div>}
-            <div className={`msg ${mine ? 'mine' : ''} ${grouped && !newDay ? 'grouped' : ''}`}>
+            <div data-mid={m.id} className={`msg ${mine ? 'mine' : ''} ${grouped && !newDay ? 'grouped' : ''} ${flash === m.id ? 'flash' : ''}`}>
               {!mine && !grouped ? <Avatar p={from} className="mini round" /> : !mine && <span className="mini-gap" />}
               <div className="msg-col">
                 {!mine && !grouped && !other && <small className="msg-name">{from ? firstName(from.name) : '?'}</small>}
@@ -254,7 +308,18 @@ function Thread({ room, me, people, markSeen }) {
                     </span>
                   </div>
                 ) : (
-                  <div className="bubble">{m.text}</div>
+                  <div className="bubble">
+                    {m.reply_to &&
+                      (quoted ? (
+                        <button type="button" className="quote" onClick={() => goTo(quoted.id)}>
+                          <b>{quoted.from_id === me.id ? t('chat_you') : quotedFrom ? firstName(quotedFrom.name) : '?'}</b>
+                          <span>{quoted.text}</span>
+                        </button>
+                      ) : (
+                        <span className="quote gone">{t('chat_orig_gone')}</span>
+                      ))}
+                    {linkify(m.text)}
+                  </div>
                 )}
                 {rx.length > 0 && (
                   <div className="reactions">
@@ -275,6 +340,11 @@ function Thread({ room, me, people, markSeen }) {
                 <small className="msg-meta">
                   {timeFmt(lang, m.created_at)}
                   {m.edited_at && <span> · {t('chat_edited')}</span>}
+                  {!isEditing && (
+                    <button type="button" className="rp" onClick={() => startReply(m)} aria-label={t('chat_reply')}>
+                      <Icon name="reply" size={15} />
+                    </button>
+                  )}
                   {!isEditing && (
                     <button type="button" className="rx-add" onClick={() => setPicker(picker === m.id ? null : m.id)} aria-label={t('chat_react')} aria-expanded={picker === m.id}>
                       <Icon name="smile" size={15} />
@@ -302,8 +372,22 @@ function Thread({ room, me, people, markSeen }) {
         })}
       </div>
 
+      {away && (
+        <button type="button" className="jump" onClick={jump}>
+          <Icon name="arrow" size={16} /> {t('chat_jump')}
+        </button>
+      )}
+      {replyTo && (
+        <div className="reply-bar">
+          <span>
+            <b>{t('chat_replying', { name: replyTo.from_id === me.id ? t('chat_you') : firstName(byId(replyTo.from_id)?.name || '?') })}</b>: {replyTo.text}
+          </span>
+          <button type="button" onClick={() => setReplyTo(null)} aria-label={t('chat_cancel_reply')}>✕</button>
+        </div>
+      )}
       <form className="composer-bar" onSubmit={send}>
         <textarea
+          ref={input}
           value={text}
           rows={1}
           maxLength={MAX}

@@ -417,3 +417,57 @@ const V4 = {
   },
 };
 for (const l of Object.keys(V4)) Object.assign(DICT[l], V4[l]);
+
+const V6 = {
+  en: {
+    sheet_install_title: 'Put Memoris on your home screen', sheet_install_lead: 'It opens like a real app, in one tap.',
+    sheet_install_b1: 'An icon next to your other apps', sheet_install_b2: 'Notifications for messages and notes', sheet_install_b3: 'Works even with a weak connection',
+    sheet_install_btn: 'Install', sheet_later: 'Not now', sheet_install_menu: 'Open your browser menu and choose “Install app” or “Add to Home screen”.',
+    sheet_ios_1: 'Tap Share in Safari’s toolbar', sheet_ios_2: 'Choose “Add to Home Screen”', sheet_ios_3: 'Tap Add, then open Memoris from your home screen',
+    sheet_push_title: 'Don’t miss a thing', sheet_push_lead: 'Get a notification when something happens in the class.',
+    sheet_push_b1: 'New messages and replies', sheet_push_b2: 'Notes written for you', sheet_push_b3: 'The daily question and your streak',
+    sheet_push_btn: 'Turn on notifications', sheet_push_note: 'You can change this any time in your cabinet.',
+    push_on: 'Notifications are on', push_blocked: 'Notifications are blocked. Allow them in your browser settings for this site.', push_err: 'Could not turn on notifications. Try again.',
+    notif_title: 'Notifications', notif_on: 'On for this device.', notif_off: 'Off for this device.', notif_blocked: 'Blocked in the browser. Allow notifications for this site in the browser settings.',
+    notif_unsupported: 'This browser can’t show notifications.', notif_ios: 'On iPhone, install the app first (Share → Add to Home Screen), then turn notifications on.', notif_demo: 'Available when the class database is connected.',
+    notif_enable: 'Turn on', notif_disable: 'Turn off',
+    notif_dm: 'Private messages', notif_class: 'Class chat', notif_notes: 'Notes for me', notif_news: 'Announcements', notif_daily: 'Daily question and streak',
+    help_q12: 'How do I get notifications?', help_a12: 'Open your cabinet and turn on notifications, or tap the bell at the top. On iPhone, first add the app to your home screen. You choose what to get: private messages, class chat, notes, announcements, the daily question.',
+    help_q13: 'How do I install the app?', help_a13: 'Tap the install icon at the top, or Install in the footer. On iPhone use Share → Add to Home Screen. Other browsers: open the menu and choose Install app.',
+  },
+  ru: {
+    sheet_install_title: 'Добавьте Memoris на главный экран', sheet_install_lead: 'Откроется как настоящее приложение, в одно касание.',
+    sheet_install_b1: 'Иконка рядом с другими приложениями', sheet_install_b2: 'Уведомления о сообщениях и заметках', sheet_install_b3: 'Работает даже при слабой связи',
+    sheet_install_btn: 'Установить', sheet_later: 'Не сейчас', sheet_install_menu: 'Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».',
+    sheet_ios_1: 'Нажмите «Поделиться» в панели Safari', sheet_ios_2: 'Выберите «На экран “Домой”»', sheet_ios_3: 'Нажмите «Добавить» и откройте Memoris с главного экрана',
+    sheet_push_title: 'Не пропустите ничего', sheet_push_lead: 'Получайте уведомление, когда в классе что-то происходит.',
+    sheet_push_b1: 'Новые сообщения и ответы', sheet_push_b2: 'Заметки, написанные вам', sheet_push_b3: 'Вопрос дня и ваша серия',
+    sheet_push_btn: 'Включить уведомления', sheet_push_note: 'Это можно изменить в любой момент в кабинете.',
+    push_on: 'Уведомления включены', push_blocked: 'Уведомления заблокированы. Разрешите их для этого сайта в настройках браузера.', push_err: 'Не удалось включить уведомления. Попробуйте ещё раз.',
+    notif_title: 'Уведомления', notif_on: 'Включены на этом устройстве.', notif_off: 'Выключены на этом устройстве.', notif_blocked: 'Заблокированы в браузере. Разрешите уведомления для этого сайта в настройках браузера.',
+    notif_unsupported: 'Этот браузер не умеет показывать уведомления.', notif_ios: 'На iPhone сначала установите приложение (Поделиться → На экран «Домой»), потом включите уведомления.', notif_demo: 'Доступно, когда подключена база класса.',
+    notif_enable: 'Включить', notif_disable: 'Выключить',
+    notif_dm: 'Личные сообщения', notif_class: 'Чат класса', notif_notes: 'Заметки мне', notif_news: 'Объявления', notif_daily: 'Вопрос дня и серия',
+    help_q12: 'Как получать уведомления?', help_a12: 'Откройте кабинет и включите уведомления или нажмите колокольчик вверху. На iPhone сначала добавьте приложение на главный экран. Вы сами выбираете, что получать: личные сообщения, чат класса, заметки, объявления, вопрос дня.',
+    help_q13: 'Как установить приложение?', help_a13: 'Нажмите значок установки вверху или «Установить» внизу страницы. На iPhone: Поделиться → На экран «Домой». В других браузерах откройте меню и выберите «Установить приложение».',
+  },
+  ja: {
+    sheet_install_title: 'Memorisをホーム画面に追加', sheet_install_lead: '本物のアプリのように、ワンタップで開きます。',
+    sheet_install_b1: '他のアプリと並ぶアイコン', sheet_install_b2: 'メッセージやメモの通知', sheet_install_b3: '電波が弱くても使える',
+    sheet_install_btn: 'インストール', sheet_later: '今はしない', sheet_install_menu: 'ブラウザのメニューから「アプリをインストール」または「ホーム画面に追加」を選んでください。',
+    sheet_ios_1: 'Safariのツールバーで共有をタップ', sheet_ios_2: '「ホーム画面に追加」を選ぶ', sheet_ios_3: '追加をタップして、ホーム画面からMemorisを開く',
+    sheet_push_title: '見逃さないように', sheet_push_lead: 'クラスで何かあったら通知でお知らせします。',
+    sheet_push_b1: '新しいメッセージと返信', sheet_push_b2: 'あなた宛てのメモ', sheet_push_b3: '今日の質問と連続記録',
+    sheet_push_btn: '通知をオンにする', sheet_push_note: 'マイページでいつでも変更できます。',
+    push_on: '通知をオンにしました', push_blocked: '通知がブロックされています。ブラウザの設定でこのサイトの通知を許可してください。', push_err: '通知をオンにできませんでした。もう一度お試しください。',
+    notif_title: '通知', notif_on: 'この端末でオンです。', notif_off: 'この端末でオフです。', notif_blocked: 'ブラウザでブロックされています。設定でこのサイトの通知を許可してください。',
+    notif_unsupported: 'このブラウザは通知に対応していません。', notif_ios: 'iPhoneでは、先にアプリを追加（共有 → ホーム画面に追加）してから通知をオンにしてください。', notif_demo: 'クラスのデータベースに接続すると使えます。',
+    notif_enable: 'オンにする', notif_disable: 'オフにする',
+    notif_dm: '個人メッセージ', notif_class: 'クラスチャット', notif_notes: '自分宛てのメモ', notif_news: 'お知らせ', notif_daily: '今日の質問と連続記録',
+    help_q12: '通知を受け取るには？', help_a12: 'マイページで通知をオンにするか、上部のベルをタップします。iPhoneでは先にホーム画面へ追加してください。個人メッセージ、クラスチャット、メモ、お知らせ、今日の質問から選べます。',
+    help_q13: 'アプリをインストールするには？', help_a13: '上部のインストールアイコン、またはページ下部の「インストール」をタップします。iPhoneは共有 → ホーム画面に追加。他のブラウザではメニューから「アプリをインストール」を選びます。',
+  },
+};
+for (const l of Object.keys(V6)) Object.assign(DICT[l], V6[l]);
+import { V7 } from './i18n-v7.js';
+for (const l of Object.keys(V7)) Object.assign(DICT[l], V7[l]);

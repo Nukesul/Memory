@@ -13,6 +13,7 @@ import { Avatar } from '../components/Avatar';
 import { Scene, Cloud, Petal, Flower, Star, Sparkle, Onigiri, Plane } from '../components/Doodles';
 import { completion } from '../people';
 import { firstName } from '../roster';
+import { Checklist, DailyCard } from '../components/Daily';
 
 const DAY = 864e5;
 const HERO_IDS = [3, 5, 12, 18, 19, 15, 4];
@@ -44,52 +45,60 @@ export default function Home() {
   const photoCount = people.reduce((n, p) => n + p.photos.length, 0);
   const countryCount = new Set(people.map((p) => p.country)).size;
 
+  const hero = (
+    <section className="hero" aria-labelledby="hero-title">
+      <Scene />
+      <Cloud className="cloud c1" />
+      <Cloud className="cloud c2" />
+      <div className="petals" aria-hidden="true">
+        {Array.from({ length: 9 }, (_, i) => (
+          <Petal key={i} className="petal" style={{ '--x': `${8 + i * 10.5}%`, '--d': `${9 + (i % 4) * 2.2}s`, '--s': `${-i * 1.7}s`, '--z': `${16 + (i % 3) * 6}px` }} />
+        ))}
+      </div>
+      <div className="hero-copy">
+        <p className="hero-school">
+          {CLASS.school} <span lang="ja">{CLASS.schoolJa}</span>
+        </p>
+        <h1 id="hero-title" className="hero-title">
+          <span className="hero-2j">{CLASS.name}</span>
+          <span className="hero-hand">{t('hero_hand')}</span>
+        </h1>
+        <p className="hero-sub">{t('hero_sub', { city: lang === 'ja' ? CLASS.cityJa : CLASS.city, years: CLASS.years })}</p>
+        <div className="hero-progress" role="img" aria-label={t('desks_taken', { n: taken, total: people.length })}>
+          <div className="bar"><span style={{ width: `${(taken / people.length) * 100}%` }} /></div>
+          <p>{t('desks_taken', { n: taken, total: people.length })}</p>
+        </div>
+        <div className="hero-cta">
+          <a className="btn btn-sun" href={href('me')}>
+            {me ? t('open_my_cabinet') : t('take_desk')} <Icon name="arrow" size={18} />
+          </a>
+          <a className="btn btn-white" href={href('play')}>
+            <Icon name="game" size={20} /> {t('hero_play')}
+          </a>
+        </div>
+      </div>
+      <div className="hero-pola" aria-hidden="true">
+        {heroFaces.map((p, i) => (
+          <a key={p.id} tabIndex={-1} className={`hp hp${i}`} href={href(`p/${p.id}`)}>
+            <img src={asset(p.avatar.thumb)} alt="" decoding="async" />
+            <span>{p.name.split(' ')[0]}</span>
+          </a>
+        ))}
+        <Sparkle className="spk s1" size={34} fill="var(--sun)" />
+        <Sparkle className="spk s2" size={24} />
+      </div>
+    </section>
+  );
+
   return (
     <>
-      <section className="hero" aria-labelledby="hero-title">
-        <Scene />
-        <Cloud className="cloud c1" />
-        <Cloud className="cloud c2" />
-        <div className="petals" aria-hidden="true">
-          {Array.from({ length: 9 }, (_, i) => (
-            <Petal key={i} className="petal" style={{ '--x': `${8 + i * 10.5}%`, '--d': `${9 + (i % 4) * 2.2}s`, '--s': `${-i * 1.7}s`, '--z': `${16 + (i % 3) * 6}px` }} />
-          ))}
-        </div>
-        <div className="hero-copy">
-          <p className="hero-school">
-            {CLASS.school} <span lang="ja">{CLASS.schoolJa}</span>
-          </p>
-          <h1 id="hero-title" className="hero-title">
-            <span className="hero-2j">{CLASS.name}</span>
-            <span className="hero-hand">{t('hero_hand')}</span>
-          </h1>
-          <p className="hero-sub">{t('hero_sub', { city: lang === 'ja' ? CLASS.cityJa : CLASS.city, years: CLASS.years })}</p>
-          <div className="hero-progress" role="img" aria-label={t('desks_taken', { n: taken, total: people.length })}>
-            <div className="bar"><span style={{ width: `${(taken / people.length) * 100}%` }} /></div>
-            <p>{t('desks_taken', { n: taken, total: people.length })}</p>
-          </div>
-          <div className="hero-cta">
-            <a className="btn btn-sun" href={href('me')}>
-              {me ? t('open_my_cabinet') : t('take_desk')} <Icon name="arrow" size={18} />
-            </a>
-            <a className="btn btn-white" href={href('play')}>
-              <Icon name="game" size={20} /> {t('hero_play')}
-            </a>
-          </div>
-        </div>
-        <div className="hero-pola" aria-hidden="true">
-          {heroFaces.map((p, i) => (
-            <a key={p.id} tabIndex={-1} className={`hp hp${i}`} href={href(`p/${p.id}`)}>
-              <img src={asset(p.avatar.thumb)} alt="" decoding="async" />
-              <span>{p.name.split(' ')[0]}</span>
-            </a>
-          ))}
-          <Sparkle className="spk s1" size={34} fill="var(--sun)" />
-          <Sparkle className="spk s2" size={24} />
-        </div>
-      </section>
+      {me && <DailyCard compact />}
+      {me && <Checklist />}
+      {!me && hero}
 
       {me && <ForYou />}
+      {me && <QuickTiles />}
+      {me && hero}
 
       <Announcements />
 
@@ -291,6 +300,32 @@ const rel = (lang, iso) => {
   }
   return '';
 };
+
+/** Big shortcuts so the main places are one tap from the home page. */
+function QuickTiles() {
+  const { t, unread, state, me } = useApp();
+  const msgs = Object.values(unread).reduce((a, b) => a + b, 0);
+  const notes = state.notes.filter((n) => n.to_id === me.id).length;
+  const tiles = [
+    { to: 'chat', icon: 'chat', label: t('nav_chat'), n: msgs },
+    { to: 'wall', icon: 'note', label: t('wall_title'), n: notes },
+    { to: 'play', icon: 'game', label: t('nav_play') },
+    { to: 'gallery', icon: 'photo', label: t('nav_album') },
+  ];
+  return (
+    <ul className="tiles" aria-label={t('nav_home')}>
+      {tiles.map((x) => (
+        <li key={x.to}>
+          <a href={href(x.to)}>
+            <Icon name={x.icon} size={26} />
+            <span>{x.label}</span>
+            {x.n > 0 && <b className="badge">{x.n}</b>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /** A short personal summary for the logged-in person. */
 function ForYou() {

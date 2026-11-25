@@ -17,6 +17,8 @@ import Book from './views/Book';
 import Help from './views/Help';
 import Capsule from './views/Capsule';
 import Admin from './views/Admin';
+import Today from './views/Today';
+import { SheetHost } from './components/Sheets';
 import NotFound from './views/NotFound';
 
 const NAV = [
@@ -30,12 +32,12 @@ const NAV = [
 
 function Shell() {
   const [section, arg] = useRoute();
-  const { t, lang, setLang, theme, toggleTheme, state, refresh, toasts, cloud, me, unread, canInstall, install } = useApp();
+  const { t, lang, setLang, theme, toggleTheme, state, refresh, toasts, cloud, me, unread, installPending, pushPending, openSheet } = useApp();
   useEffect(() => {
     document.documentElement.style.setProperty('--banner', cloud ? '0px' : '56px');
   }, [cloud]);
   useEffect(() => {
-    const key = { people: 'nav_people', p: 'nav_people', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book', chat: 'nav_chat', play: 'play_title', me: 'nav_me', help: 'help_title', capsule: 'capsule', admin: 'admin_title' }[section];
+    const key = { people: 'nav_people', p: 'nav_people', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book', chat: 'nav_chat', play: 'play_title', me: 'nav_me', help: 'help_title', capsule: 'capsule', admin: 'admin_title', today: 'today_title' }[section];
     document.title = `${key ? t(key) + ' · ' : ''}Class 2J · Memoris`;
   }, [section, t]);
   const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
@@ -65,6 +67,7 @@ function Shell() {
   else if (section === 'help') view = <Help />;
   else if (section === 'capsule') view = <Capsule />;
   else if (section === 'admin') view = <Admin />;
+  else if (section === 'today') view = <Today />;
   else if (section && section !== 'home') view = <NotFound />;
   else view = <Home />;
 
@@ -106,6 +109,16 @@ function Shell() {
           <button className="icon-btn" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'}>
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
           </button>
+          {me && (pushPending || installPending) && (
+            <button
+              className="icon-btn app-chip"
+              onClick={() => openSheet(pushPending ? 'push' : 'install')}
+              aria-label={t(pushPending ? 'sheet_push_title' : 'sheet_install_title')}
+            >
+              <Icon name={pushPending ? 'bell' : 'download'} size={20} />
+              <span className="pulse" aria-hidden="true" />
+            </button>
+          )}
           {me && (
             <a className="me-chip" href={href('me')} aria-label={me.name}>
               <Avatar p={me} className="mini" />
@@ -125,9 +138,9 @@ function Shell() {
         <p>
           <a href={href('help')}>{t('help_title')}</a> · <a href={href('book')}>{t('tab_book')}</a> · <a href={href('play')}>{t('nav_play')}</a>
         </p>
-        {canInstall && (
+        {installPending && (
           <p>
-            <button type="button" className="btn btn-small" onClick={install}>
+            <button type="button" className="btn btn-small" onClick={() => openSheet('install')}>
               <Icon name="download" size={16} /> {t('install_app')}
             </button>
           </p>
@@ -145,6 +158,7 @@ function Shell() {
       </nav>
 
       <Lightbox />
+      <SheetHost />
       <div className="toasts" role="status" aria-live="polite">
         {toasts.map((x) => (
           <div key={x.id} className={`toast ${x.kind}`}>{x.text}</div>

@@ -203,6 +203,42 @@ const cloud = {
       capsule_writers: await t('capsules', 'author_id,updated_at'),
     };
   },
+  // Push subscriptions go through functions, so nobody can read other people's endpoints.
+  async savePushSub(args) {
+    const { error } = await sb.rpc('save_push_sub', args);
+    if (error) throw error;
+  },
+  async updatePushPrefs(args) {
+    const { error } = await sb.rpc('update_push_prefs', args);
+    if (error) throw error;
+  },
+  async removePushSub(endpoint) {
+    const { error } = await sb.rpc('remove_push_sub', { p_endpoint: endpoint });
+    if (error) throw error;
+  },
+  // Daily question: everyone's answers for the last weeks (about 20 people x 45 days).
+  async loadDaily(sinceDay) {
+    const { data, error } = await sb.from('daily_answers').select('day,person_id,mood,text,created_at').gte('day', sinceDay).order('day', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+  async saveDaily(row) {
+    const { error } = await sb.from('daily_answers').upsert(row);
+    if (error) throw error;
+  },
+  async deleteDaily(day, personId) {
+    const { error } = await sb.from('daily_answers').delete().eq('day', day).eq('person_id', personId);
+    if (error) throw error;
+  },
+  async touchPresence(id) {
+    const { error } = await sb.from('presence').upsert({ person_id: id, seen_at: new Date().toISOString() });
+    if (error) throw error;
+  },
+  async loadPresence() {
+    const { data, error } = await sb.from('presence').select('person_id,seen_at');
+    if (error) throw error;
+    return data;
+  },
 };
 
 // ───────── Local demo adapter ─────────
@@ -333,6 +369,30 @@ const demo = {
   async adminBackup() {
     const s = demo.read();
     return { profiles: Object.values(s.profiles || {}), notes: s.notes, votes: s.votes, class_chat: (s.messages || []).filter((m) => m.to_id == null), announcements: s.announcements || [], capsule_writers: (s.capsules || []).map((c) => ({ author_id: c.author_id, updated_at: c.updated_at })) };
+  },
+  async savePushSub() {},
+  async updatePushPrefs() {},
+  async removePushSub() {},
+  async loadDaily(sinceDay) {
+    return (demo.read().daily || []).filter((d) => d.day >= sinceDay).sort((a, b) => b.day.localeCompare(a.day));
+  },
+  async saveDaily(row) {
+    const s = demo.read();
+    s.daily = [...(s.daily || []).filter((d) => !(d.day === row.day && d.person_id === row.person_id)), { ...row, created_at: new Date().toISOString() }];
+    demo.write(s);
+  },
+  async deleteDaily(day, personId) {
+    const s = demo.read();
+    s.daily = (s.daily || []).filter((d) => !(d.day === day && d.person_id === personId));
+    demo.write(s);
+  },
+  async touchPresence(id) {
+    const s = demo.read();
+    s.presence = { ...(s.presence || {}), [id]: new Date().toISOString() };
+    demo.write(s);
+  },
+  async loadPresence() {
+    return Object.entries(demo.read().presence || {}).map(([id, seen_at]) => ({ person_id: Number(id), seen_at }));
   },
 };
 
