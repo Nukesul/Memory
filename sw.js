@@ -1,5 +1,5 @@
 /* Memoris service worker: the app shell opens offline; data always comes from the network. */
-const CACHE = 'memoris-v3';
+const CACHE = 'memoris-v4';
 const SHELL = ['./', './favicon.svg', './manifest.webmanifest', './icon-192.png'];
 
 self.addEventListener('install', (e) => {
