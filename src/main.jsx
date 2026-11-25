@@ -5,7 +5,11 @@ import '@fontsource-variable/unbounded';
 import '@fontsource-variable/caveat';
 import './styles.css';
 import './styles/ds.css';
+import './styles/messenger.css';
 import App from './App.jsx';
+import { trackViewport } from './viewport';
+
+trackViewport();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

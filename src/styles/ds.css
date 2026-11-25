@@ -151,7 +151,7 @@ body {
 @media (min-width: 1024px) {
   .app-top, .app-nav { display: none; }
   .app-main { margin-left: var(--side-w); padding: 24px 32px 48px; }
-  .app.in-thread .app-main { padding: 0; }
+  .app.in-thread .app-main { padding: 24px 32px 48px; }
   .app-side {
     position: fixed; top: var(--banner, 0); bottom: 0; left: 0; z-index: 40; width: var(--side-w);
     display: flex; flex-direction: column; gap: 4px; padding: 20px 12px;

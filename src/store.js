@@ -193,42 +193,6 @@ const cloud = {
     const { error } = await sb.from('votes').upsert(vote);
     if (error) throw error;
   },
-  // Chat: the class room plus private messages that involve me.
-  async loadChat(me) {
-    const { data, error } = await sb
-      .from('messages')
-      .select('*')
-      .or(`to_id.is.null,from_id.eq.${me},to_id.eq.${me}`)
-      .order('created_at', { ascending: false })
-      .limit(250);
-    if (error) throw error;
-    return data.reverse();
-  },
-  async sendMessage(m) {
-    const { data, error } = await sb.from('messages').insert(m).select().single();
-    if (error) throw error;
-    return data;
-  },
-  // Both check that the database really changed a row: with row level security a refused
-  // change is not an error, it just touches nothing, and the screen must not pretend otherwise.
-  async editMessage(id, text) {
-    const edited_at = new Date().toISOString();
-    const { data, error } = await sb.from('messages').update({ text, edited_at }).eq('id', id).select('id');
-    if (error) throw error;
-    if (!data?.length) throw new Error('not_changed');
-    return edited_at;
-  },
-  async deleteMessage(id) {
-    const { data, error } = await sb.from('messages').delete().eq('id', id).select('id');
-    if (error) throw error;
-    if (!data?.length) throw new Error('not_changed');
-  },
-  // Reactions go through a function: it only toggles my own id on a message I can see.
-  async reactMessage(id, reactions, emoji) {
-    const { data, error } = await sb.rpc('react_message', { p_id: id, p_emoji: emoji });
-    if (error) throw error;
-    return data;
-  },
   // Autographs: loaded per page so the home screen stays light.
   async loadAutographs(toId) {
     const { data, error } = await sb.from('autographs').select('from_id,to_id,ink,created_at').eq('to_id', toId).order('created_at', { ascending: false });
@@ -268,15 +232,6 @@ const cloud = {
     if (error) throw error;
   },
   // Instant chat: any change to `messages` is a signal to reload. The payload is ignored on purpose.
-  subscribeMessages(onChange) {
-    const ch = sb
-      .channel('memoris-messages')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => onChange())
-      .subscribe();
-    return () => {
-      sb.removeChannel(ch);
-    };
-  },
   // Admin: the database checks that the signed-in person is an admin.
   async admin(fn, args = {}) {
     const { p_pin, ...rest } = args; // eslint-disable-line no-unused-vars
@@ -365,33 +320,6 @@ const demo = {
     s.notes = s.notes.filter((n) => n.id !== id);
     demo.write(s);
   },
-  async loadChat(me) {
-    return (demo.read().messages || []).filter((m) => m.to_id == null || m.from_id === me || m.to_id === me);
-  },
-  async sendMessage(m) {
-    const s = demo.read();
-    const row = { ...m, id: Date.now(), created_at: new Date().toISOString(), edited_at: null };
-    s.messages = [...(s.messages || []), row];
-    demo.write(s);
-    return row;
-  },
-  async editMessage(id, text) {
-    const s = demo.read();
-    const edited_at = new Date().toISOString();
-    s.messages = (s.messages || []).map((m) => (m.id === id ? { ...m, text, edited_at } : m));
-    demo.write(s);
-    return edited_at;
-  },
-  async deleteMessage(id) {
-    const s = demo.read();
-    s.messages = (s.messages || []).filter((m) => m.id !== id);
-    demo.write(s);
-  },
-  async reactMessage(id, reactions) {
-    const s = demo.read();
-    s.messages = (s.messages || []).map((m) => (m.id === id ? { ...m, reactions } : m));
-    demo.write(s);
-  },
   async saveVote(vote) {
     const s = demo.read();
     s.votes = [...s.votes.filter((v) => !(v.voter_id === vote.voter_id && v.category === vote.category)), vote];
@@ -428,11 +356,6 @@ const demo = {
     const s = demo.read();
     s.capsules = (s.capsules || []).filter((c) => c.author_id !== id);
     demo.write(s);
-  },
-  subscribeMessages(onChange) {
-    const h = (e) => e.key === DEMO_KEY && onChange();
-    window.addEventListener('storage', h);
-    return () => window.removeEventListener('storage', h);
   },
   // Demo mode has no server: whoever is signed in as the admin classmate is the admin.
   async admin(fn, args = {}) {
@@ -586,8 +509,9 @@ const demoAuth = {
 };
 
 export const api = CLOUD ? cloud : demo;
+export const supabase = sb;
 export const auth = CLOUD ? cloudAuth : demoAuth;
 /** Forget everything this browser cached about the class (used on sign-out). */
 export const clearLocalData = () => {
-  ['memoris:cache', SIGNED_KEY, 'memoris:me', 'memoris:seen', 'memoris:pushprefs'].forEach((k) => ls.del(k));
+  ['memoris:cache', SIGNED_KEY, 'memoris:me', 'memoris:seen', 'memoris:pushprefs', 'memoris:drafts', 'memoris:outbox'].forEach((k) => ls.del(k));
 };

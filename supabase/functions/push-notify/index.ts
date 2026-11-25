@@ -11,22 +11,13 @@ const FIRST: Record<number, string> = {
 };
 
 const TXT: Record<string, Record<string, string>> = {
-  en: { classRoom: 'Class chat', note: 'wrote you a note', announce: 'Announcement from the class admin', dailyTitle: 'Today’s question is waiting', dailyBody: 'One line, one tap. See how everyone answered.', streakTitle: '🔥 Keep your streak alive', streakBody: 'Answer today’s question before midnight.' },
-  ru: { classRoom: 'Чат класса', note: 'написал(а) вам заметку', announce: 'Объявление от админа класса', dailyTitle: 'Вопрос дня ждёт вас', dailyBody: 'Одна строка, один тап. Посмотрите, как ответили все.', streakTitle: '🔥 Не потеряйте серию', streakBody: 'Ответьте на вопрос дня до полуночи.' },
-  ja: { classRoom: 'クラスチャット', note: 'があなたにメモを書きました', announce: 'クラス管理者からのお知らせ', dailyTitle: '今日の質問が待っています', dailyBody: '一言だけ。みんなの答えを見よう。', streakTitle: '🔥 連続記録を守ろう', streakBody: '今日の質問に、日付が変わる前に答えてね。' },
+  en: { classRoom: 'Class chat', note: 'wrote you a note', announce: 'Announcement from the class admin', photo: '📷 Photo', voice: '🎤 Voice message', post: '🖼 Shared a post', story: '↩︎ Replied to your story' },
+  ru: { classRoom: 'Чат класса', note: 'написал(а) вам заметку', announce: 'Объявление от админа класса', photo: '📷 Фото', voice: '🎤 Голосовое сообщение', post: '🖼 Поделился(-ась) публикацией', story: '↩︎ Ответ на вашу историю' },
+  ja: { classRoom: 'クラスチャット', note: 'があなたにメモを書きました', announce: 'クラス管理者からのお知らせ', photo: '📷 写真', voice: '🎤 ボイスメッセージ', post: '🖼 投稿をシェアしました', story: '↩︎ ストーリーに返信しました' },
 };
 const tx = (lang: string) => TXT[lang] ?? TXT.en;
 
 const clip = (s: string, n = 110) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
-const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo' }).format(new Date());
-const shift = (day: string, d: number) => new Date(new Date(day + 'T00:00:00Z').getTime() + d * 864e5).toISOString().slice(0, 10);
-function streakOf(days: Set<string>, now: string) {
-  let d = days.has(now) ? now : shift(now, -1);
-  let n = 0;
-  while (days.has(d)) { n++; d = shift(d, -1); }
-  return n;
-}
-
 type Sub = { endpoint: string; person_id: number; p256dh: string; auth: string; lang: string; prefs: Record<string, boolean> };
 type Job = { sub: Sub; payload: { title: string; body: string; url: string; tag: string } };
 
@@ -54,15 +45,18 @@ async function plan(kind: string, rec: any): Promise<Job[]> {
   const N = await names();
   const jobs: Job[] = [];
   if (kind === 'message') {
+    if (rec.kind === 'system' || rec.deleted_at) return jobs;
     const from = N[rec.from_id] ?? '?';
-    if (rec.to_id == null) {
-      for (const s of await subs((s) => s.person_id !== rec.from_id && s.prefs?.class !== false)) {
-        jobs.push({ sub: s, payload: { title: `${from} · ${tx(s.lang).classRoom}`, body: clip(rec.text), url: '#/chat/all', tag: 'chat-all' } });
-      }
-    } else {
-      for (const s of await subs((s) => s.person_id === rec.to_id && s.prefs?.dm !== false)) {
-        jobs.push({ sub: s, payload: { title: from, body: clip(rec.text), url: `#/chat/${rec.from_id}`, tag: `dm-${rec.from_id}` } });
-      }
+    const { data: conv } = await sb.from('conversations').select('id,kind,title').eq('id', rec.conversation_id).single();
+    if (!conv) return jobs;
+    const { data: mem } = await sb.from('conversation_members').select('person_id,muted').eq('conversation_id', conv.id);
+    const targets = new Set((mem ?? []).filter((m) => m.person_id !== rec.from_id && !m.muted).map((m) => m.person_id));
+    const pref = conv.kind === 'class' ? 'class' : 'dm';
+    for (const s of await subs((s) => targets.has(s.person_id) && s.prefs?.[pref] !== false)) {
+      const t = tx(s.lang);
+      const body = rec.kind === 'photo' ? `${t.photo}${rec.text ? ' · ' + rec.text : ''}` : rec.kind === 'voice' ? t.voice : rec.kind === 'post' ? t.post : rec.kind === 'story_reply' ? `${t.story}: ${rec.text}` : rec.text;
+      const title = conv.kind === 'direct' ? from : `${from} · ${conv.kind === 'class' ? t.classRoom : conv.title}`;
+      jobs.push({ sub: s, payload: { title, body: clip(body || ''), url: `#/chat/c${conv.id}`, tag: `conv-${conv.id}` } });
     }
   } else if (kind === 'note') {
     const from = N[rec.from_id] ?? '?';
@@ -72,25 +66,6 @@ async function plan(kind: string, rec: any): Promise<Job[]> {
   } else if (kind === 'announcement') {
     for (const s of await subs((s) => s.prefs?.news !== false)) {
       jobs.push({ sub: s, payload: { title: tx(s.lang).announce, body: clip(rec.text), url: '#/', tag: 'announce' } });
-    }
-  } else if (kind === 'daily' || kind === 'streak') {
-    const now = today();
-    const { data } = await sb.from('daily_answers').select('day,person_id').gte('day', shift(now, -60));
-    const byPerson = new Map<number, Set<string>>();
-    for (const r of data ?? []) {
-      if (!byPerson.has(r.person_id)) byPerson.set(r.person_id, new Set());
-      byPerson.get(r.person_id)!.add(r.day);
-    }
-    for (const s of await subs((s) => s.prefs?.daily !== false)) {
-      const days = byPerson.get(s.person_id) ?? new Set<string>();
-      if (days.has(now)) continue; // already answered today
-      const n = streakOf(days, now);
-      const t = tx(s.lang);
-      if (kind === 'daily') {
-        jobs.push({ sub: s, payload: { title: t.dailyTitle, body: n >= 2 ? `🔥 ${n} · ${t.dailyBody}` : t.dailyBody, url: '#/today', tag: 'daily' } });
-      } else if (n >= 2) {
-        jobs.push({ sub: s, payload: { title: `${t.streakTitle} (${n})`, body: t.streakBody, url: '#/today', tag: 'daily' } });
-      }
     }
   }
   return jobs;

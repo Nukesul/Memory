@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, auth, clearLocalData, CLOUD, ls } from './store';
+import * as messenger from './messenger/store';
 import { currentSubscription, disablePush, enablePush, getPrefs, isIOS, isStandalone, pushPermission, pushSupported, savePrefs, syncPush } from './push';
 import { DICT } from './i18n';
 import { COUNTRIES } from './config';
@@ -148,6 +149,7 @@ export function AppProvider({ children }) {
       /* push is optional */
     }
     await auth.signOut();
+    messenger.stop();
     clearLocalData();
     setState({ profiles: {}, notes: [], votes: [], announcements: [], status: 'loading' });
   };
@@ -233,13 +235,7 @@ export function AppProvider({ children }) {
     setState((s) => ({ ...s, notes: s.notes.filter((n) => n.id !== id) }));
   };
 
-  // ── chat ──
-  const [chat, setChat] = useState([]);
-  const [seen, setSeen] = useState(() => ls.get('memoris:seen', {}));
-  const fast = useRef(false);
-  const setChatFast = useCallback((v) => {
-    fast.current = v;
-  }, []);
+  // ── presence & messenger ──
   const [presence, setPresence] = useState({});
   const [onlineVisible, setOnlineVisibleState] = useState(true);
   const setOnlineVisible = async (v) => {
@@ -251,13 +247,8 @@ export function AppProvider({ children }) {
       throw e;
     }
   };
-  const refreshChat = useCallback(async () => {
+  const refreshPresence = useCallback(async () => {
     if (!meId) return;
-    try {
-      setChat(await api.loadChat(meId));
-    } catch (e) {
-      console.error(e);
-    }
     try {
       const rows = await api.loadPresence();
       setPresence(Object.fromEntries(rows.filter((r) => r.visible !== false && r.person_id !== meId).map((r) => [r.person_id, r.seen_at])));
@@ -267,11 +258,13 @@ export function AppProvider({ children }) {
       /* presence is a nicety */
     }
   }, [meId]);
-  // Tell the class I am around (at most once a minute, only while the app is in front).
+  // Tell the class I am around (at most once a minute, only while the app is in front) and see who else is.
   useEffect(() => {
     if (!meId) return undefined;
     const ping = () => {
-      if (document.visibilityState === 'visible') api.touchPresence(meId).catch(() => {});
+      if (document.visibilityState !== 'visible') return;
+      api.touchPresence(meId).catch(() => {});
+      refreshPresence();
     };
     ping();
     const id = setInterval(ping, 60000);
@@ -280,83 +273,13 @@ export function AppProvider({ children }) {
       clearInterval(id);
       document.removeEventListener('visibilitychange', ping);
     };
+  }, [meId, refreshPresence]);
+  // The messenger keeps its own state (conversations, drafts, unsent messages) for the signed-in person.
+  useEffect(() => {
+    if (meId) messenger.start(meId);
+    else messenger.stop();
   }, [meId]);
-  useEffect(() => {
-    if (!meId) {
-      setChat([]);
-      return undefined;
-    }
-    refreshChat();
-    let last = Date.now();
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      if (Date.now() - last >= (fast.current ? 4000 : 30000)) {
-        last = Date.now();
-        refreshChat();
-      }
-    }, 2000);
-    return () => clearInterval(id);
-  }, [meId, refreshChat]);
-  // Instant delivery: the server tells us when anything in the chat changes. Polling above stays as the backup.
-  useEffect(() => {
-    if (!meId) return undefined;
-    let timer = null;
-    const off = api.subscribeMessages(() => {
-      clearTimeout(timer);
-      timer = setTimeout(refreshChat, 150);
-    });
-    return () => {
-      clearTimeout(timer);
-      off();
-    };
-  }, [meId, refreshChat]);
-  const markSeen = useCallback((room) => {
-    setSeen((s) => {
-      const next = { ...s, [room]: Date.now() };
-      ls.set('memoris:seen', next);
-      return next;
-    });
-  }, []);
-  const sendMessage = async (toId, text, replyTo = null) => {
-    const row = await api.sendMessage({ from_id: meId, to_id: toId, text: text.trim(), ...(replyTo ? { reply_to: replyTo } : {}) });
-    setChat((l) => [...l, row]);
-  };
-  const editMessage = async (id, text) => {
-    const edited_at = await api.editMessage(id, text.trim());
-    setChat((l) => l.map((m) => (m.id === id ? { ...m, text: text.trim(), edited_at } : m)));
-  };
-  const reactMessage = async (id, emoji) => {
-    const msg = chat.find((m) => m.id === id);
-    if (!msg) return;
-    const cur = { ...(msg.reactions || {}) };
-    const list = new Set(cur[emoji] || []);
-    if (list.has(meId)) list.delete(meId);
-    else list.add(meId);
-    if (list.size) cur[emoji] = [...list];
-    else delete cur[emoji];
-    setChat((l) => l.map((m) => (m.id === id ? { ...m, reactions: cur } : m)));
-    try {
-      const server = await api.reactMessage(id, cur, emoji);
-      if (server && typeof server === 'object') setChat((l) => l.map((m) => (m.id === id ? { ...m, reactions: server } : m)));
-    } catch (e) {
-      setChat((l) => l.map((m) => (m.id === id ? msg : m)));
-      throw e;
-    }
-  };
-  const deleteMessage = async (id) => {
-    await api.deleteMessage(id);
-    setChat((l) => l.filter((m) => m.id !== id));
-  };
-  // Unread = messages from others, newer than the last time I opened that room.
-  const unread = useMemo(() => {
-    const by = {};
-    for (const m of chat) {
-      if (m.from_id === meId) continue;
-      const room = m.to_id == null ? 'all' : String(m.from_id);
-      if (new Date(m.created_at).getTime() > (seen[room] || 0)) by[room] = (by[room] || 0) + 1;
-    }
-    return by;
-  }, [chat, seen, meId]);
+  const unreadTotal = messenger.useMessenger((st) => st.inbox.reduce((n, r) => n + (r.muted ? 0 : r.unread), 0));
 
   // The service worker tells us about pushes (refresh quietly) and notification taps (open the right page).
   useEffect(() => {
@@ -364,23 +287,23 @@ export function AppProvider({ children }) {
     const onMsg = (e) => {
       if (e.data?.type === 'goto' && typeof e.data.hash === 'string') window.location.hash = e.data.hash;
       if (e.data?.type === 'push') {
-        refreshChat();
+        messenger.refreshInbox();
         refresh();
       }
     };
     navigator.serviceWorker.addEventListener('message', onMsg);
     return () => navigator.serviceWorker.removeEventListener('message', onMsg);
-  }, [refreshChat, refresh]);
+  }, [refresh]);
   // Red number on the app icon when installed.
   useEffect(() => {
-    const n = Object.values(unread).reduce((a, b) => a + b, 0);
+    const n = unreadTotal;
     try {
       if (n > 0) navigator.setAppBadge?.(n);
       else navigator.clearAppBadge?.();
     } catch {
       /* not supported */
     }
-  }, [unread]);
+  }, [unreadTotal]);
 
   const vote = async (category, targetId) => {
     const row = { voter_id: meId, category, target_id: targetId };
@@ -389,7 +312,7 @@ export function AppProvider({ children }) {
   };
 
   const value = {
-    vote, chat, unread, reactMessage, refreshChat, setChatFast, markSeen, sendMessage, editMessage, deleteMessage,
+    vote, unreadTotal, refreshPresence,
     lang, setLang, t, country, theme, toggleTheme,
     state, people, person, refresh, meId, me, logout, session, isAdmin, onlineVisible, setOnlineVisible,
     toasts, toast, box, openPhotos, closePhotos,

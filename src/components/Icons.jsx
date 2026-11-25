@@ -1,4 +1,34 @@
 const P = {
+  'bell-off': <path d="M8.7 3.9A6 6 0 0118 9c0 4 1.2 6 2 7M6.3 6.4A6 6 0 006 9c0 5-2 7-2 7h12M10.3 20a2 2 0 003.4 0M3 3l18 18" />,
+  pin: <path d="M15 3l6 6-3 1-4 4 .5 4.5L13 20l-4-4-5 5M9 16l-5-5 1.5-1.5L10 10l4-4 1-3" />,
+  forward: <path d="M14 5l6 6-6 6M20 11H9a5 5 0 00-5 5v3" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M15 9V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7a2 2 0 002 2h3" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="5.5" cy="12" r="1.4" />
+      <circle cx="12" cy="12" r="1.4" />
+      <circle cx="18.5" cy="12" r="1.4" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  play: <path d="M8 5.5v13l10.5-6.5z" />,
+  pause: <path d="M8 5v14M16 5v14" />,
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21M8.5 21h7" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="6.5" />

@@ -9,7 +9,7 @@ import Profile from './views/Profile';
 import Gallery from './views/Gallery';
 import Wall from './views/Wall';
 import Me from './views/Me';
-import Chat from './views/Chat';
+import Messages from './messenger/Messages';
 import Awards from './views/Awards';
 import Book from './views/Book';
 import Help from './views/Help';
@@ -54,7 +54,7 @@ function NavItem({ to, icon, label, active, badge, children }) {
 
 function Shell() {
   const [section, arg] = useRoute();
-  const { t, state, refresh, toasts, cloud, me, meId, unread, installPending, pushPending, openSheet } = useApp();
+  const { t, state, refresh, toasts, cloud, me, meId, unreadTotal, installPending, pushPending, openSheet } = useApp();
   useEffect(() => {
     document.documentElement.style.setProperty('--banner', cloud ? '0px' : '34px');
   }, [cloud]);
@@ -62,9 +62,8 @@ function Shell() {
     const key = ROUTE_TITLE[section];
     document.title = `${key ? t(key) + ' · ' : ''}Memoris · 2J`;
   }, [section, t]);
-  const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
   const tab = tabFor(section, arg, meId);
-  const inThread = section === 'chat' && Boolean(arg);
+  const inThread = section === 'chat' && /^c\d+$/.test(arg || '');
 
   let view;
   if (state.status === 'loading') {
@@ -88,7 +87,7 @@ function Shell() {
   else if (section === 'me') view = <Me mode={arg} />;
   else if (section === 'settings') view = <Settings />;
   else if (section === 'memories') view = <Memories />;
-  else if (section === 'chat') view = <Chat room={arg} />;
+  else if (section === 'chat') view = <Messages />;
   else if (section === 'awards' || (section === 'play' && arg === 'awards')) view = <Awards />;
   else if (section === 'play' || section === 'today') view = <Memories />;
   else if (section === 'book') view = <Book />;
