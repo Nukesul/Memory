@@ -40,7 +40,7 @@ export async function currentSubscription() {
 
 async function store(sub, personId, lang) {
   const j = sub.toJSON();
-  await api.savePushSub({ p_person: personId, p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_lang: lang, p_prefs: getPrefs() });
+  await api.savePushSub({ p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_lang: lang, p_prefs: getPrefs() });
 }
 
 /** Asks the browser for permission (must run from a tap), subscribes and saves the subscription. */

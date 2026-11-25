@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../app-context';
-import { ADMIN_ID, COUNTRY_ORDER, FIELDS, FUN_FIELDS, MAX_PHOTOS } from '../config';
-import { byId, matchNames } from '../roster';
+import { COUNTRY_ORDER, FIELDS, FUN_FIELDS, MAX_PHOTOS } from '../config';
+import { byId } from '../roster';
 import { sampleFor } from '../samples';
 import { asset, buildPerson, completion } from '../people';
 import { processImage } from '../image';
@@ -11,95 +11,16 @@ import { Sheet } from '../components/Sheet';
 import { Avatar } from '../components/Avatar';
 import { Flag } from '../components/Flag';
 import { Icon } from '../components/Icons';
-import { NotifySettings } from '../components/NotifySettings';
+import { AccountSettings, NotifySettings } from '../components/NotifySettings';
 
 export default function Me() {
-  const { me, meId, logout } = useApp();
-  if (meId && !me) {
-    // The saved id does not exist any more.
-    logout();
-    return null;
-  }
-  return me ? <Editor key={me.id} p={me} /> : <Login />;
-}
-
-/* ───────────── Login: country, then name ───────────── */
-function Login() {
-  const { t, country, login, people } = useApp();
-  const [code, setCode] = useState(null);
-  const [name, setName] = useState('');
-  const [tried, setTried] = useState(false);
-  const input = useRef(null);
-
-  useEffect(() => {
-    if (code) input.current?.focus();
-  }, [code]);
-
-  const matches = code ? matchNames(code, name, people) : [];
-  const submit = (e) => {
-    e.preventDefault();
-    setTried(true);
-    if (matches.length === 1) login(matches[0].id);
-  };
-
-  return (
-    <section className="page login">
-      <h1 className="page-title">{t('login_title')}</h1>
-      <p className="page-lead">{t('login_lead')}</p>
-
-      <h2 className="step">{t('login_step1')}</h2>
-      <div className="country-grid" role="radiogroup" aria-label={t('login_step1')}>
-        {COUNTRY_ORDER.map((c) => (
-          <button key={c} type="button" role="radio" aria-checked={code === c} className={`country-btn ${code === c ? 'on' : ''}`} onClick={() => { setCode(c); setTried(false); }}>
-            <Flag code={c} />
-            <span>{country(c)}</span>
-            <small>{people.filter((p) => p.country === c).length}</small>
-          </button>
-        ))}
-      </div>
-
-      {code && (
-        <form onSubmit={submit} className="login-name">
-          <h2 className="step">{t('login_step2')}</h2>
-          <label className="visually-hidden" htmlFor="login-name">{t('login_step2')}</label>
-          <input
-            id="login-name"
-            ref={input}
-            value={name}
-            onChange={(e) => { setName(e.target.value); setTried(false); }}
-            placeholder={t('login_placeholder')}
-            autoComplete="off"
-            autoCapitalize="words"
-            enterKeyHint="go"
-          />
-          {matches.length > 0 && (
-            <ul className="suggest" aria-label={t('login_matches')}>
-              {matches.map((m) => (
-                <li key={m.id}>
-                  <button type="button" onClick={() => login(m.id)}>
-                    <Avatar p={people.find((p) => p.id === m.id)} className="mini" />
-                    {m.name}
-                    <Icon name="arrow" size={16} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {tried && matches.length === 0 && <p className="form-error" role="alert">{t('login_none', { country: country(code) })}</p>}
-          {tried && matches.length > 1 && <p className="form-error" role="alert">{t('login_many')}</p>}
-          <button className="btn" disabled={name.trim().length < 2}>
-            {t('login_go')} <Icon name="arrow" size={18} />
-          </button>
-        </form>
-      )}
-      <p className="login-note">{t('login_note')}</p>
-    </section>
-  );
+  const { me } = useApp();
+  return me ? <Editor key={me.id} p={me} /> : null;
 }
 
 /* ───────────── Editor: the cabinet ───────────── */
 function Editor({ p }) {
-  const { t, lang, country, logout, saveProfile, uploadPhoto, removePhoto, toast, cloud } = useApp();
+  const { t, lang, country, logout, saveProfile, uploadPhoto, removePhoto, toast, cloud, isAdmin } = useApp();
   const [confirmReset, setConfirmReset] = useState(false);
   const draftKey = `memoris:draft:${p.id}`;
   const sample = sampleFor(p.id, lang);
@@ -263,7 +184,7 @@ function Editor({ p }) {
         </div>
         <div className="cab-actions">
           <a className="btn btn-ghost btn-small" href={href(`p/${p.id}`)}>{t('view_page')}</a>
-          {p.id === ADMIN_ID && <a className="btn btn-small" href={href('admin')}><Icon name="lock" size={16} /> {t('admin_title')}</a>}
+          {isAdmin && <a className="btn btn-small" href={href('admin')}><Icon name="lock" size={16} /> {t('admin_title')}</a>}
           <button className="btn btn-ghost btn-small" onClick={() => { flush().then(logout); }}>{t('logout')}</button>
         </div>
       </header>
@@ -401,6 +322,7 @@ function Editor({ p }) {
           </button>
 
           <NotifySettings />
+          <AccountSettings />
 
           <div className="cab-tools">
             <button type="button" className="btn btn-small btn-ghost" onClick={copyLink}>

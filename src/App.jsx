@@ -20,6 +20,7 @@ import Admin from './views/Admin';
 import Today from './views/Today';
 import { SheetHost } from './components/Sheets';
 import NotFound from './views/NotFound';
+import { InviteFlow, SignIn, Splash } from './views/Auth';
 
 const NAV = [
   { to: '', icon: 'home', key: 'nav_home', match: ['', undefined] },
@@ -168,10 +169,31 @@ function Shell() {
   );
 }
 
+/** Nothing of the class is shown until the database knows who you are. */
+function Gate() {
+  const [section, arg] = useRoute();
+  const { session, me, meId, state, t, logout } = useApp();
+  if (session === undefined) return <Splash />;
+  if ((section === 'join' || section === 'reset') && arg) return <InviteFlow kind={section} code={arg} />;
+  if (!session) return <SignIn />;
+  // Signed in, but not one of the 20 people this site knows (should not happen).
+  if (state.status === 'ready' && meId && !me) {
+    return (
+      <div className="auth">
+        <main className="auth-card">
+          <p className="auth-lead">{t('auth_unknown')}</p>
+          <button className="btn auth-submit" onClick={logout}>{t('auth_signout')}</button>
+        </main>
+      </div>
+    );
+  }
+  return <Shell />;
+}
+
 export default function App() {
   return (
     <AppProvider>
-      <Shell />
+      <Gate />
     </AppProvider>
   );
 }

@@ -82,3 +82,11 @@ npm run dev
 - **Getting started** checklist on Home disappears when everything is done.
 - **Install / notification sheets** open on entry (install first, then notifications, then at most every 3 days). Swipe down to close. Push works on iPhone only for an installed app.
 - **Chat**: replies (`messages.reply_to`), online dot (`presence`), "new messages" jump button, clickable links.
+
+## Accounts and privacy (phase 1 of Memoris 2.0)
+
+- Sign-in is invite-only. The admin opens **Admin → Members** and creates a one-time link for a classmate (`#/join/<code>`, 14 days). The classmate picks an email and password; the `auth-invite` Edge Function links the new Supabase Auth user to that classmate (`app_metadata.person_id`, set only by the server).
+- Forgotten password: the admin creates a reset link (`#/reset/<code>`, 24 hours). Saving the new password signs out every other device.
+- Row Level Security: nothing is readable without a linked account; everyone changes only their own rows; private messages are visible only to their two people; capsule letters stay hidden until `capsule_open_at()`; the `photos` bucket is private (signed links, upload only into your own folder).
+- Plan, migrations and rollback: `supabase/SECURITY-PLAN.md`, `supabase/migrations/`, `supabase/rollback/`.
+- Recommended in the Supabase dashboard: Authentication → Sign In / Providers → turn off "Allow new users to sign up" (accounts are created only through invites anyway).

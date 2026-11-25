@@ -53,3 +53,33 @@ export function NotifySettings() {
     </fieldset>
   );
 }
+
+/** Account and privacy: who I am signed in as, and whether classmates see when I'm online. */
+export function AccountSettings() {
+  const { t, session, onlineVisible, setOnlineVisible, toast, logout } = useApp();
+  const flip = async (v) => {
+    try {
+      await setOnlineVisible(v);
+    } catch {
+      toast(t('err_generic'), 'err');
+    }
+  };
+  return (
+    <fieldset className="notify">
+      <legend><Icon name="lock" size={18} /> {t('acct_title')}</legend>
+      <p className="muted">{t('acct_signed_as', { email: session?.email || '' })}</p>
+      <ul className="switches">
+        <li>
+          <label>
+            <input type="checkbox" checked={onlineVisible} onChange={(e) => flip(e.target.checked)} />
+            <span>{t('priv_online')}</span>
+          </label>
+        </li>
+      </ul>
+      <p className="muted small">{t('priv_online_note')}</p>
+      <button type="button" className="btn btn-small btn-ghost" onClick={logout}>
+        <Icon name="arrow" size={16} /> {t('auth_signout')}
+      </button>
+    </fieldset>
+  );
+}

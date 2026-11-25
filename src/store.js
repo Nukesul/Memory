@@ -5,7 +5,10 @@ const KEY_ = import.meta.env.VITE_SUPABASE_ANON_KEY;
 /** true = real shared storage (Supabase). false = demo mode that lives only in this browser. */
 export const CLOUD = Boolean(URL_ && KEY_);
 
-const sb = CLOUD ? createClient(URL_, KEY_, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
+// The session is kept in this browser and refreshed automatically, so people stay signed in.
+const sb = CLOUD
+  ? createClient(URL_, KEY_, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'memoris-auth' } })
+  : null;
 const BUCKET = 'photos';
 
 export const ls = {
@@ -43,6 +46,126 @@ const toDataUrl = (blob) =>
     r.readAsDataURL(blob);
   });
 
+// ───────── Private photos ─────────
+// The bucket is private. The database keeps the stable public-style address; the browser swaps it for a
+// signed link (valid 7 days, cached) when showing it, and swaps it back before saving.
+const PUB = `/storage/v1/object/public/${BUCKET}/`;
+const SIGN = `/storage/v1/object/sign/${BUCKET}/`;
+const SIGN_TTL = 7 * 86400;
+const SIGNED_KEY = 'memoris:signed';
+export const photoPath = (u) => {
+  if (typeof u !== 'string') return null;
+  const i = u.indexOf(PUB);
+  if (i >= 0) return decodeURIComponent(u.slice(i + PUB.length).split('?')[0]);
+  const j = u.indexOf(SIGN);
+  if (j >= 0) return decodeURIComponent(u.slice(j + SIGN.length).split('?')[0]);
+  return null;
+};
+const canonical = (u) => {
+  const path = photoPath(u);
+  return path ? `${URL_}${PUB}${path.split('/').map(encodeURIComponent).join('/')}` : u;
+};
+const deepMap = (v, fn) => {
+  if (typeof v === 'string') return fn(v);
+  if (Array.isArray(v)) return v.map((x) => deepMap(x, fn));
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deepMap(x, fn)]));
+  return v;
+};
+const collect = (v, out) => {
+  if (typeof v === 'string') {
+    const p = photoPath(v);
+    if (p) out.add(p);
+  } else if (v && typeof v === 'object') Object.values(v).forEach((x) => collect(x, out));
+  return out;
+};
+let signed = ls.get(SIGNED_KEY, {});
+async function signPaths(paths) {
+  const now = Date.now();
+  const need = [...paths].filter((p) => !signed[p] || signed[p].exp - now < 86400e3);
+  for (let i = 0; i < need.length; i += 200) {
+    const part = need.slice(i, i + 200);
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrls(part, SIGN_TTL);
+    if (error) throw error;
+    for (const r of data) if (r.signedUrl && !r.error) signed[r.path] = { url: r.signedUrl, exp: now + SIGN_TTL * 1000 };
+  }
+  if (need.length) {
+    const fresh = Object.fromEntries(Object.entries(signed).filter(([, v]) => v.exp > now));
+    signed = fresh;
+    ls.set(SIGNED_KEY, fresh);
+  }
+}
+/** Replace every photo address inside `v` with a signed link the browser can open. */
+async function withSigned(v) {
+  const paths = collect(v, new Set());
+  if (!paths.size) return v;
+  await signPaths(paths);
+  return deepMap(v, (u) => {
+    const p = photoPath(u);
+    return p && signed[p] ? signed[p].url : u;
+  });
+}
+const unsign = (v) => deepMap(v, (u) => (photoPath(u) ? canonical(u) : u));
+
+// ───────── Accounts (invite-only) ─────────
+const fnErr = async (error) => {
+  // functions.invoke wraps non-2xx answers; the body carries our short error code.
+  try {
+    const body = await error.context.json();
+    return new Error(body.error || 'server');
+  } catch {
+    return new Error('network');
+  }
+};
+const cloudAuth = {
+  async session() {
+    const { data } = await sb.auth.getSession();
+    return toSession(data.session);
+  },
+  onChange(cb) {
+    const { data } = sb.auth.onAuthStateChange((_e, s) => cb(toSession(s)));
+    return () => data.subscription.unsubscribe();
+  },
+  async signIn(email, password) {
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    if (error) throw new Error(/invalid/i.test(error.message) ? 'creds' : /fetch|network/i.test(error.message) ? 'network' : 'server');
+  },
+  async signOut() {
+    await sb.auth.signOut();
+  },
+  async invite(action, payload) {
+    const { data, error } = await sb.functions.invoke('auth-invite', { body: { action, ...payload } });
+    if (error) throw await fnErr(error);
+    return data;
+  },
+  async isAdmin() {
+    const { data, error } = await sb.rpc('is_admin');
+    if (error) return false;
+    return data === true;
+  },
+  async members() {
+    const { data, error } = await sb.rpc('admin_members');
+    if (error) throw error;
+    return data;
+  },
+  async createInvite(person, kind) {
+    const { data, error } = await sb.rpc('admin_create_invite', { p_person: person, p_kind: kind });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+  async revokeInvites(person) {
+    const { error } = await sb.rpc('admin_revoke_invites', { p_person: person });
+    if (error) throw error;
+  },
+  async setDisabled(person, disabled) {
+    const { error } = await sb.rpc('admin_set_disabled', { p_person: person, p_disabled: disabled });
+    if (error) throw new Error(error.message);
+  },
+};
+function toSession(s) {
+  const id = Number(s?.user?.app_metadata?.person_id);
+  return s && id ? { personId: id, email: s.user.email } : null;
+}
+
 // ───────── Supabase adapter ─────────
 const cloud = {
   async load() {
@@ -54,12 +177,13 @@ const cloud = {
     ]);
     if (p.error) throw p.error;
     if (n.error) throw n.error;
+    const rows = await withSigned(p.data);
     // Votes are optional: the site still works if the table is missing.
-    return { profiles: Object.fromEntries(p.data.map((r) => [r.id, r])), notes: n.data, votes: v.error ? [] : v.data, announcements: a.error ? [] : a.data };
+    return { profiles: Object.fromEntries(rows.map((r) => [r.id, r])), notes: n.data, votes: v.error ? [] : v.data, announcements: a.error ? [] : a.data };
   },
   async saveProfile(id, data, filled) {
     const row = { id, data, filled, updated_at: new Date().toISOString() };
-    const { error } = await sb.from('profiles').upsert(row);
+    const { error } = await sb.from('profiles').upsert({ ...row, data: unsign(data) });
     if (error) throw error;
     return row;
   },
@@ -76,14 +200,11 @@ const cloud = {
       return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
     };
     const [fullUrl, thumbUrl] = await Promise.all([put(`${base}.${ext(full)}`, full), put(`${base}-t.${ext(thumb)}`, thumb)]);
-    return { full: fullUrl, thumb: thumbUrl, w, h };
+    return withSigned({ full: fullUrl, thumb: thumbUrl, w, h });
   },
   async removePhoto(photo) {
     // Best effort: delete the files behind a removed photo.
-    const marker = `/object/public/${BUCKET}/`;
-    const paths = [photo.full, photo.thumb]
-      .filter((u) => u && u.includes(marker))
-      .map((u) => decodeURIComponent(u.split(marker)[1]));
+    const paths = [photo.full, photo.thumb].map(photoPath).filter(Boolean);
     if (paths.length) await sb.storage.from(BUCKET).remove(paths);
   },
   async addNote(note) {
@@ -125,9 +246,11 @@ const cloud = {
     const { error } = await sb.from('messages').delete().eq('id', id);
     if (error) throw error;
   },
-  async reactMessage(id, reactions) {
-    const { error } = await sb.from('messages').update({ reactions }).eq('id', id);
+  // Reactions go through a function: it only toggles my own id on a message I can see.
+  async reactMessage(id, reactions, emoji) {
+    const { data, error } = await sb.rpc('react_message', { p_id: id, p_emoji: emoji });
     if (error) throw error;
+    return data;
   },
   // Autographs: loaded per page so the home screen stays light.
   async loadAutographs(toId) {
@@ -145,7 +268,7 @@ const cloud = {
   },
   // Time capsule: the list shows who has written; the text is only fetched for the author, or for everyone once it opens.
   async loadCapsuleMeta() {
-    const { data, error } = await sb.from('capsules').select('author_id,updated_at');
+    const { data, error } = await sb.rpc('capsule_meta');
     if (error) throw error;
     return data;
   },
@@ -177,9 +300,10 @@ const cloud = {
       sb.removeChannel(ch);
     };
   },
-  // Admin: every call carries the PIN, and the database checks it.
+  // Admin: the database checks that the signed-in person is an admin.
   async admin(fn, args = {}) {
-    const { data, error } = await sb.rpc(fn, args);
+    const { p_pin, ...rest } = args; // eslint-disable-line no-unused-vars
+    const { data, error } = await sb.rpc(fn, rest);
     if (error) throw error;
     return data;
   },
@@ -200,7 +324,7 @@ const cloud = {
       votes: await t('votes'),
       class_chat: (await t('messages')).filter((m) => m.to_id == null),
       announcements: await t('announcements'),
-      capsule_writers: await t('capsules', 'author_id,updated_at'),
+      capsule_writers: (await sb.rpc('capsule_meta')).data || [],
     };
   },
   // Push subscriptions go through functions, so nobody can read other people's endpoints.
@@ -234,8 +358,12 @@ const cloud = {
     const { error } = await sb.from('presence').upsert({ person_id: id, seen_at: new Date().toISOString() });
     if (error) throw error;
   },
+  async setPresenceVisible(id, visible) {
+    const { error } = await sb.from('presence').upsert({ person_id: id, visible, seen_at: new Date().toISOString() });
+    if (error) throw error;
+  },
   async loadPresence() {
-    const { data, error } = await sb.from('presence').select('person_id,seen_at');
+    const { data, error } = await sb.from('presence').select('person_id,seen_at,visible');
     if (error) throw error;
     return data;
   },
@@ -342,9 +470,9 @@ const demo = {
     window.addEventListener('storage', h);
     return () => window.removeEventListener('storage', h);
   },
-  // Demo mode has no server, so the admin PIN is simply 123456.
+  // Demo mode has no server: whoever is signed in as the admin classmate is the admin.
   async admin(fn, args = {}) {
-    const ok = (args.p_pin || '') === '123456';
+    const ok = dread().session?.personId === 2;
     const s = demo.read();
     if (!ok) return { ok: false };
     if (fn === 'admin_post') {
@@ -391,9 +519,115 @@ const demo = {
     s.presence = { ...(s.presence || {}), [id]: new Date().toISOString() };
     demo.write(s);
   },
+  async setPresenceVisible(id, visible) {
+    const s = demo.read();
+    s.presenceHidden = { ...(s.presenceHidden || {}), [id]: !visible };
+    demo.write(s);
+  },
   async loadPresence() {
-    return Object.entries(demo.read().presence || {}).map(([id, seen_at]) => ({ person_id: Number(id), seen_at }));
+    const hidden = demo.read().presenceHidden || {};
+    return Object.entries(demo.read().presence || {}).map(([id, seen_at]) => ({ person_id: Number(id), seen_at, visible: !hidden[id] }));
+  },
+};
+
+// Demo accounts live in this browser only, so the whole sign-in flow can be tried without a server.
+const DEMO_AUTH = 'memoris:demo-auth';
+const demoListeners = new Set();
+const dread = () => ({ accounts: {}, invites: {}, session: null, ...ls.get(DEMO_AUTH, {}) });
+const dwrite = (v) => {
+  ls.set(DEMO_AUTH, v);
+  demoListeners.forEach((cb) => cb(v.session));
+};
+const randCode = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[b % 64]).join('').slice(0, 22);
+const demoAuth = {
+  async session() {
+    return dread().session;
+  },
+  onChange(cb) {
+    demoListeners.add(cb);
+    return () => demoListeners.delete(cb);
+  },
+  async signIn(email, password) {
+    const s = dread();
+    const a = s.accounts[email.trim().toLowerCase()];
+    if (!a || a.pw !== password || a.disabled) throw new Error('creds');
+    s.session = { personId: a.personId, email: email.trim().toLowerCase() };
+    dwrite(s);
+  },
+  async signOut() {
+    const s = dread();
+    s.session = null;
+    dwrite(s);
+  },
+  /** Demo only: enter as a classmate without an account. */
+  async enterAs(personId) {
+    const s = dread();
+    s.session = { personId, email: `demo${personId}@memoris.demo` };
+    dwrite(s);
+  },
+  async invite(action, { code, email, password }) {
+    const s = dread();
+    const inv = s.invites[code];
+    if (!inv || inv.used || inv.exp < Date.now()) throw new Error('invalid');
+    if (action === 'info') return { person_id: inv.person, kind: inv.kind };
+    if (!password || password.length < 8) throw new Error('weak_password');
+    if (action === 'join') {
+      const e = (email || '').trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)) throw new Error('bad_email');
+      if (s.accounts[e]) throw new Error('email_taken');
+      if (Object.values(s.accounts).some((a) => a.personId === inv.person)) throw new Error('already_registered');
+      s.accounts[e] = { pw: password, personId: inv.person, created: new Date().toISOString() };
+      inv.used = true;
+      dwrite(s);
+      return { ok: true, email: e };
+    }
+    const entry = Object.entries(s.accounts).find(([, a]) => a.personId === inv.person);
+    if (!entry) throw new Error('no_account');
+    entry[1].pw = password;
+    inv.used = true;
+    if (s.session?.personId === inv.person) s.session = null;
+    dwrite(s);
+    return { ok: true, email: entry[0] };
+  },
+  async isAdmin() {
+    return dread().session?.personId === 2;
+  },
+  async members() {
+    const s = dread();
+    const ids = new Set([...Object.values(s.accounts).map((a) => a.personId), ...Object.values(s.invites).map((i) => i.person)]);
+    return [...ids].map((id) => {
+      const acc = Object.entries(s.accounts).find(([, a]) => a.personId === id);
+      const inv = Object.values(s.invites).filter((i) => i.person === id && !i.used && i.exp > Date.now()).sort((a, b) => b.exp - a.exp)[0];
+      return { person_id: id, email: acc?.[0] || null, registered_at: acc?.[1].created || null, disabled: Boolean(acc?.[1].disabled), invite_kind: inv?.kind || null, invite_expires: inv ? new Date(inv.exp).toISOString() : null };
+    });
+  },
+  async createInvite(person, kind) {
+    const s = dread();
+    const has = Object.values(s.accounts).some((a) => a.personId === person);
+    if (kind === 'join' && has) throw new Error('already_registered');
+    if (kind === 'reset' && !has) throw new Error('no_account');
+    for (const i of Object.values(s.invites)) if (i.person === person && i.kind === kind) i.used = true;
+    const code = randCode();
+    s.invites[code] = { person, kind, exp: Date.now() + (kind === 'join' ? 14 : 1) * 864e5, used: false };
+    dwrite(s);
+    return code;
+  },
+  async revokeInvites(person) {
+    const s = dread();
+    for (const i of Object.values(s.invites)) if (i.person === person) i.used = true;
+    dwrite(s);
+  },
+  async setDisabled(person, disabled) {
+    const s = dread();
+    for (const a of Object.values(s.accounts)) if (a.personId === person) a.disabled = disabled;
+    dwrite(s);
   },
 };
 
 export const api = CLOUD ? cloud : demo;
+export const auth = CLOUD ? cloudAuth : demoAuth;
+/** Forget everything this browser cached about the class (used on sign-out). */
+export const clearLocalData = () => {
+  ['memoris:cache', SIGNED_KEY, 'memoris:me', 'memoris:seen', 'memoris:pushprefs'].forEach((k) => ls.del(k));
+  signed = {};
+};

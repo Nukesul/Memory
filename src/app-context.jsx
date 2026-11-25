@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, CLOUD, ls } from './store';
+import { api, auth, clearLocalData, CLOUD, ls } from './store';
 import { currentSubscription, disablePush, enablePush, getPrefs, isIOS, isStandalone, pushPermission, pushSupported, savePrefs, syncPush } from './push';
 import { DICT } from './i18n';
 import { AWARDS, COUNTRIES, DAILY_MAX } from './config';
@@ -85,6 +85,27 @@ export function AppProvider({ children }) {
   const pushSupportedNow = pushSupported() && (!isIOS() || standalone);
   const pushPending = pushSupportedNow && pushInfo.permission === 'default';
 
+  // ── account: invite-only sign-in; the database knows who I am ──
+  const [session, setSession] = useState(undefined); // undefined = still checking
+  useEffect(() => {
+    let alive = true;
+    auth.session().then((v) => alive && setSession(v)).catch(() => alive && setSession(null));
+    const off = auth.onChange((v) => setSession(v));
+    return () => {
+      alive = false;
+      off();
+    };
+  }, []);
+  const meId = session?.personId ?? null;
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!meId) {
+      setIsAdmin(false);
+      return;
+    }
+    auth.isAdmin().then(setIsAdmin).catch(() => setIsAdmin(false));
+  }, [meId]);
+
   // ── data ──
   const cached = CLOUD ? ls.get('memoris:cache', null) : null;
   const [state, setState] = useState({
@@ -107,27 +128,30 @@ export function AppProvider({ children }) {
     }
   }, []);
   useEffect(() => {
+    if (!meId) return undefined;
     refresh();
     const onVisible = () => {
       if (document.visibilityState === 'visible' && Date.now() - lastLoad.current > 60000) refresh();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refresh]);
+  }, [refresh, meId]);
 
   const people = useMemo(() => buildAll(state.profiles), [state.profiles]);
 
-  // ── session (who is logged in on this device) ──
-  const [meId, setMeId] = useState(() => ls.get('memoris:me', null));
-  const login = (id) => {
-    ls.set('memoris:me', id);
-    setMeId(id);
-  };
-  const logout = () => {
-    ls.del('memoris:me');
-    setMeId(null);
-  };
   const me = people.find((p) => p.id === meId) || null;
+  const logout = async () => {
+    try {
+      const sub = await currentSubscription();
+      if (sub) await api.removePushSub(sub.endpoint).catch(() => {});
+      await sub?.unsubscribe().catch(() => {});
+    } catch {
+      /* push is optional */
+    }
+    await auth.signOut();
+    clearLocalData();
+    setState({ profiles: {}, notes: [], votes: [], announcements: [], status: 'loading' });
+  };
   const person = useCallback((id) => people.find((p) => p.id === Number(id)) || null, [people]);
 
   useEffect(() => {
@@ -256,6 +280,16 @@ export function AppProvider({ children }) {
     fast.current = v;
   }, []);
   const [presence, setPresence] = useState({});
+  const [onlineVisible, setOnlineVisibleState] = useState(true);
+  const setOnlineVisible = async (v) => {
+    setOnlineVisibleState(v);
+    try {
+      await api.setPresenceVisible(meId, v);
+    } catch (e) {
+      setOnlineVisibleState(!v);
+      throw e;
+    }
+  };
   const refreshChat = useCallback(async () => {
     if (!meId) return;
     try {
@@ -265,7 +299,9 @@ export function AppProvider({ children }) {
     }
     try {
       const rows = await api.loadPresence();
-      setPresence(Object.fromEntries(rows.map((r) => [r.person_id, r.seen_at])));
+      setPresence(Object.fromEntries(rows.filter((r) => r.visible !== false && r.person_id !== meId).map((r) => [r.person_id, r.seen_at])));
+      const mine = rows.find((r) => r.person_id === meId);
+      if (mine) setOnlineVisibleState(mine.visible !== false);
     } catch {
       /* presence is a nicety */
     }
@@ -339,7 +375,8 @@ export function AppProvider({ children }) {
     else delete cur[emoji];
     setChat((l) => l.map((m) => (m.id === id ? { ...m, reactions: cur } : m)));
     try {
-      await api.reactMessage(id, cur);
+      const server = await api.reactMessage(id, cur, emoji);
+      if (server && typeof server === 'object') setChat((l) => l.map((m) => (m.id === id ? { ...m, reactions: server } : m)));
     } catch (e) {
       setChat((l) => l.map((m) => (m.id === id ? msg : m)));
       throw e;
@@ -406,7 +443,7 @@ export function AppProvider({ children }) {
   const value = {
     vote, chat, unread, reactMessage, refreshChat, setChatFast, markSeen, sendMessage, editMessage, deleteMessage,
     lang, setLang, t, country, theme, toggleTheme,
-    state, people, person, refresh, meId, me, login, logout,
+    state, people, person, refresh, meId, me, logout, session, isAdmin, onlineVisible, setOnlineVisible,
     toasts, toast, box, openPhotos, closePhotos,
     saveProfile, uploadPhoto: api.uploadPhoto, removePhoto: api.removePhoto, addNote, deleteNote,
     cloud: CLOUD, canInstall: Boolean(installEvt), install,
