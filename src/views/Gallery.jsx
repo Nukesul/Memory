@@ -6,8 +6,9 @@ import { href } from '../router';
 import { AlbumTabs } from '../components/AlbumTabs';
 import { Flag } from '../components/Flag';
 import { Icon } from '../components/Icons';
+import { PageHead } from '../components/ui';
 
-export default function Gallery() {
+export default function Gallery({ embedded = false, query = '' }) {
   const { t, people, openPhotos, me, country } = useApp();
   const [code, setCode] = useState('');
   const [who, setWho] = useState('');
@@ -16,16 +17,21 @@ export default function Gallery() {
     () => people.flatMap((p) => p.photos.map((ph) => ({ ...ph, personId: p.id, who: p.name.split(' ')[0], country: p.country }))),
     [people],
   );
-  const items = all.filter((x) => (!code || x.country === code) && (!who || x.personId === Number(who)));
+  const ql = query.trim().toLowerCase();
+  const items = all.filter((x) => (!code || x.country === code) && (!who || x.personId === Number(who)) && (!ql || x.who.toLowerCase().includes(ql) || (x.cap || '').toLowerCase().includes(ql) || people.find((p) => p.id === x.personId)?.name.toLowerCase().includes(ql)));
   const owners = people.filter((p) => p.photos.length && (!code || p.country === code));
 
   return (
-    <section className="page">
-      <h1 className="page-title">{t('nav_gallery')}</h1>
-      <p className="page-lead">{t('gallery_lead')}</p>
-      <AlbumTabs active="gallery" />
+    <section className={embedded ? 'gallery-embed' : 'page'}>
+      {!embedded && (
+        <>
+          <PageHead title={t('nav_gallery')} back="memories" />
+          <p className="page-lead">{t('gallery_lead')}</p>
+          <AlbumTabs active="gallery" />
+        </>
+      )}
 
-      <div className="filters">
+      {!embedded && <div className="filters">
         <div className="chips" role="group" aria-label={t('countries')}>
           <button type="button" className={`chip ${!code ? 'on' : ''}`} onClick={() => { setCode(''); setWho(''); }}>{t('all')}</button>
           {COUNTRY_ORDER.map((c) => (
@@ -46,16 +52,16 @@ export default function Gallery() {
           </label>
           <span className="muted count-note">{t('gallery_count', { n: items.length })}</span>
         </div>
-      </div>
+      </div>}
 
       {items.length === 0 ? (
         <div className="empty">
           <Icon name="photo" size={36} />
           <p>{all.length ? t('gallery_none_filter') : t('gallery_empty')}</p>
-          <a className="btn" href={href('me')}>{me ? t('open_my_cabinet') : t('take_desk')}</a>
+          {!ql && <a className="btn" href={href('me/edit')}>{me ? t('create_photo') : t('take_desk')}</a>}
         </div>
       ) : (
-        <div className="masonry">
+        <div className={embedded ? 'photo-grid' : 'masonry'}>
           {items.map((it, i) => (
             <button key={it.full + i} type="button" className="shot" onClick={() => openPhotos(items, i)} aria-label={`${t('open_photo')} — ${it.who}`}>
               <img src={asset(it.thumb)} alt={it.cap || ''} loading="lazy" decoding="async" width={it.w ? 440 : undefined} height={it.w ? Math.round((440 * it.h) / it.w) : undefined} />

@@ -4,6 +4,7 @@ import '@fontsource-variable/onest';
 import '@fontsource-variable/unbounded';
 import '@fontsource-variable/caveat';
 import './styles.css';
+import './styles/ds.css';
 import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(

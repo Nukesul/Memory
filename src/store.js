@@ -46,12 +46,11 @@ const toDataUrl = (blob) =>
     r.readAsDataURL(blob);
   });
 
-// ───────── Private photos ─────────
-// The bucket is private. The database keeps the stable public-style address; the browser swaps it for a
-// signed link (valid 7 days, cached) when showing it, and swaps it back before saving.
+// ───────── Photos ─────────
+// The bucket is readable by direct link (fast, cacheable); writes are limited to your own folder.
+// Older builds stored short-lived signed links in drafts, so both address forms are understood.
 const PUB = `/storage/v1/object/public/${BUCKET}/`;
 const SIGN = `/storage/v1/object/sign/${BUCKET}/`;
-const SIGN_TTL = 7 * 86400;
 const SIGNED_KEY = 'memoris:signed';
 export const photoPath = (u) => {
   if (typeof u !== 'string') return null;
@@ -71,40 +70,10 @@ const deepMap = (v, fn) => {
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deepMap(x, fn)]));
   return v;
 };
-const collect = (v, out) => {
-  if (typeof v === 'string') {
-    const p = photoPath(v);
-    if (p) out.add(p);
-  } else if (v && typeof v === 'object') Object.values(v).forEach((x) => collect(x, out));
-  return out;
-};
-let signed = ls.get(SIGNED_KEY, {});
-async function signPaths(paths) {
-  const now = Date.now();
-  const need = [...paths].filter((p) => !signed[p] || signed[p].exp - now < 86400e3);
-  for (let i = 0; i < need.length; i += 200) {
-    const part = need.slice(i, i + 200);
-    const { data, error } = await sb.storage.from(BUCKET).createSignedUrls(part, SIGN_TTL);
-    if (error) throw error;
-    for (const r of data) if (r.signedUrl && !r.error) signed[r.path] = { url: r.signedUrl, exp: now + SIGN_TTL * 1000 };
-  }
-  if (need.length) {
-    const fresh = Object.fromEntries(Object.entries(signed).filter(([, v]) => v.exp > now));
-    signed = fresh;
-    ls.set(SIGNED_KEY, fresh);
-  }
-}
-/** Replace every photo address inside `v` with a signed link the browser can open. */
-async function withSigned(v) {
-  const paths = collect(v, new Set());
-  if (!paths.size) return v;
-  await signPaths(paths);
-  return deepMap(v, (u) => {
-    const p = photoPath(u);
-    return p && signed[p] ? signed[p].url : u;
-  });
-}
 const unsign = (v) => deepMap(v, (u) => (photoPath(u) ? canonical(u) : u));
+const withSigned = async (v) => unsign(v);
+/** 128 random bits, so a photo address cannot be guessed. */
+const randomName = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
 
 // ───────── Accounts (invite-only) ─────────
 const fnErr = async (error) => {
@@ -131,6 +100,10 @@ const cloudAuth = {
   },
   async signOut() {
     await sb.auth.signOut();
+  },
+  async updatePassword(password) {
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) throw new Error(/should be different|same/i.test(error.message) ? 'same_password' : /weak|least|characters/i.test(error.message) ? 'weak_password' : /fetch|network/i.test(error.message) ? 'network' : 'server');
   },
   async invite(action, payload) {
     const { data, error } = await sb.functions.invoke('auth-invite', { body: { action, ...payload } });
@@ -188,7 +161,7 @@ const cloud = {
     return row;
   },
   async uploadPhoto(id, { full, thumb, w, h }) {
-    const base = `${id}/${Date.now()}-${rid()}`;
+    const base = `${id}/${Date.now()}-${randomName()}`;
     const ext = (b) => (b.type === 'image/webp' ? 'webp' : 'jpg');
     const put = async (path, blob) => {
       const { error } = await sb.storage.from(BUCKET).upload(path, blob, {
@@ -559,6 +532,16 @@ const demoAuth = {
     s.session = null;
     dwrite(s);
   },
+  async updatePassword(password) {
+    const s = dread();
+    if (!password || password.length < 8) throw new Error('weak_password');
+    const a = s.accounts[s.session?.email];
+    if (a) {
+      if (a.pw === password) throw new Error('same_password');
+      a.pw = password;
+    }
+    dwrite(s);
+  },
   /** Demo only: enter as a classmate without an account. */
   async enterAs(personId) {
     const s = dread();
@@ -629,5 +612,4 @@ export const auth = CLOUD ? cloudAuth : demoAuth;
 /** Forget everything this browser cached about the class (used on sign-out). */
 export const clearLocalData = () => {
   ['memoris:cache', SIGNED_KEY, 'memoris:me', 'memoris:seen', 'memoris:pushprefs'].forEach((k) => ls.del(k));
-  signed = {};
 };

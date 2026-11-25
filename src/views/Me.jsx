@@ -5,22 +5,27 @@ import { byId } from '../roster';
 import { sampleFor } from '../samples';
 import { asset, buildPerson, completion } from '../people';
 import { processImage } from '../image';
-import { href } from '../router';
+import { href, useRoute } from '../router';
 import { ls } from '../store';
 import { Sheet } from '../components/Sheet';
 import { Avatar } from '../components/Avatar';
 import { Flag } from '../components/Flag';
 import { Icon } from '../components/Icons';
-import { AccountSettings, NotifySettings } from '../components/NotifySettings';
+import Profile from './Profile';
+import { PageHead } from '../components/ui';
 
-export default function Me() {
+/** `#/me` is my profile; `#/me/edit` (and `#/me/edit/photos`) is the editor. */
+export default function Me({ mode }) {
   const { me } = useApp();
-  return me ? <Editor key={me.id} p={me} /> : null;
+  const parts = useRoute();
+  if (!me) return null;
+  if (mode === 'edit') return <Editor key={me.id} p={me} focus={parts[2]} />;
+  return <Profile id={me.id} />;
 }
 
 /* ───────────── Editor: the cabinet ───────────── */
-function Editor({ p }) {
-  const { t, lang, country, logout, saveProfile, uploadPhoto, removePhoto, toast, cloud, isAdmin } = useApp();
+function Editor({ p, focus }) {
+  const { t, lang, country, saveProfile, uploadPhoto, removePhoto, toast, cloud } = useApp();
   const [confirmReset, setConfirmReset] = useState(false);
   const draftKey = `memoris:draft:${p.id}`;
   const sample = sampleFor(p.id, lang);
@@ -82,6 +87,11 @@ function Editor({ p }) {
   );
 
   // Save when the tab is hidden; warn if something is unsaved.
+  useEffect(() => {
+    if (focus !== 'photos') return undefined;
+    const id = setTimeout(() => document.getElementById('photos')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 150);
+    return () => clearTimeout(id);
+  }, [focus]);
   useEffect(() => {
     const onHide = () => document.visibilityState === 'hidden' && flush();
     const onUnload = (e) => {
@@ -174,20 +184,12 @@ function Editor({ p }) {
 
   return (
     <section className="page cabinet">
-      <header className="cab-head">
-        <div>
-          <p className="cab-hi">{t('cab_hi', { name: shownName.split(' ')[0] })}</p>
-          <h1 className="page-title">{t('cab_title')}</h1>
-          <p className="cab-who">
-            <Flag code={shownCountry} /> {shownName} · {country(shownCountry)}
-          </p>
-        </div>
-        <div className="cab-actions">
-          <a className="btn btn-ghost btn-small" href={href(`p/${p.id}`)}>{t('view_page')}</a>
-          {isAdmin && <a className="btn btn-small" href={href('admin')}><Icon name="lock" size={16} /> {t('admin_title')}</a>}
-          <button className="btn btn-ghost btn-small" onClick={() => { flush().then(logout); }}>{t('logout')}</button>
-        </div>
-      </header>
+      <PageHead
+        title={t('prof_edit')}
+        back="me"
+        lead={<><Flag code={shownCountry} /> {shownName} · {country(shownCountry)}</>}
+        actions={<a className="btn btn-small" href={href('me')} onClick={() => flush()}>{t('prof_done')}</a>}
+      />
 
       <div className="progress-card">
         <div className="progress-top">
@@ -291,7 +293,7 @@ function Editor({ p }) {
             </div>
           </fieldset>
 
-          <fieldset>
+          <fieldset id="photos">
             <legend>{t('sec_photos', { n: photos.length, max: MAX_PHOTOS })}</legend>
             <ul className="photo-edit">
               {photos.map((ph, i) => (
@@ -321,8 +323,6 @@ function Editor({ p }) {
             {t('save_now')}
           </button>
 
-          <NotifySettings />
-          <AccountSettings />
 
           <div className="cab-tools">
             <button type="button" className="btn btn-small btn-ghost" onClick={copyLink}>

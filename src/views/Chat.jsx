@@ -37,7 +37,7 @@ export default function Chat({ room: arg }) {
   if (!me) {
     return (
       <section className="page">
-        <h1 className="page-title">{t('nav_chat')}</h1>
+        <h1 className="page-title">{t('nav_messages')}</h1>
         <p className="page-lead">{t('chat_login')}</p>
         <a className="btn btn-big-link" href={href('me')}>{t('open_cabinet')}</a>
       </section>
@@ -84,7 +84,7 @@ function ChatRooms({ me, arg }) {
     <section className={`page chat ${room ? 'in-room' : ''}`}>
       <div className="chat-layout">
         <aside className="chat-list" aria-label={t('chat_rooms')}>
-          <h1 className="page-title chat-title">{t('nav_chat')}</h1>
+          <h1 className="page-title chat-title">{t('nav_messages')}</h1>
           <a className={`room ${open === 'all' ? 'on' : ''}`} href={href('chat/all')}>
             <span className="room-icon" aria-hidden="true">🏫</span>
             <span className="room-info">

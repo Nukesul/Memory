@@ -9,7 +9,37 @@ export function SheetHost() {
   const { sheet, closeSheet } = useApp();
   if (sheet === 'install') return <InstallSheet onClose={closeSheet} />;
   if (sheet === 'push') return <PushSheet onClose={closeSheet} />;
+  if (sheet === 'create') return <CreateSheet onClose={closeSheet} />;
   return null;
+}
+
+/** The + button: every option here works today. */
+function CreateSheet({ onClose }) {
+  const { t, myAnswer } = useApp();
+  const items = [
+    { to: 'me/edit/photos', icon: 'photo', title: t('create_photo'), note: t('create_photo_sub') },
+    { to: 'wall', icon: 'note', title: t('create_note'), note: t('create_note_sub') },
+    { to: 'today', icon: 'flame', title: t('create_daily'), note: myAnswer ? t('today_card_done') : t('create_daily_sub') },
+    { to: 'capsule', icon: 'capsule', title: t('create_capsule'), note: t('create_capsule_sub') },
+    { to: 'explore', icon: 'pen', title: t('mem_autographs'), note: t('mem_autographs_note') },
+  ];
+  return (
+    <BottomSheet onClose={onClose} labelId="create-title">
+      <div className="sheet-body create-sheet">
+        <h2 id="create-title">{t('create_title')}</h2>
+        <ul className="create-list">
+          {items.map((it) => (
+            <li key={it.to}>
+              <a href={`#/${it.to}`} onClick={onClose}>
+                <span className="row-ico" aria-hidden="true"><Icon name={it.icon} size={22} /></span>
+                <span className="row-text"><b>{it.title}</b><small>{it.note}</small></span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </BottomSheet>
+  );
 }
 
 function InstallSheet({ onClose }) {

@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
 import { AppProvider, useApp } from './app-context';
-import { CLASS } from './config';
 import { useRoute, href } from './router';
 import { Icon } from './components/Icons';
 import { Avatar } from './components/Avatar';
 import { Lightbox } from './components/Lightbox';
 import Home from './views/Home';
-import People from './views/People';
 import Profile from './views/Profile';
 import Gallery from './views/Gallery';
 import Wall from './views/Wall';
@@ -18,30 +16,56 @@ import Help from './views/Help';
 import Capsule from './views/Capsule';
 import Admin from './views/Admin';
 import Today from './views/Today';
+import Explore from './views/Explore';
+import Memories from './views/Memories';
+import Settings from './views/Settings';
 import { SheetHost } from './components/Sheets';
 import NotFound from './views/NotFound';
 import { InviteFlow, SignIn, Splash } from './views/Auth';
 
-const NAV = [
-  { to: '', icon: 'home', key: 'nav_home', match: ['', undefined] },
-  { to: 'people', icon: 'people', key: 'nav_people', match: ['people', 'p'] },
-  { to: 'gallery', icon: 'photo', key: 'nav_album', match: ['gallery', 'wall', 'book'] },
-  { to: 'chat', icon: 'chat', key: 'nav_chat', match: ['chat'], badge: true },
-  { to: 'play', icon: 'game', key: 'nav_play', match: ['play'] },
-  { to: 'me', icon: 'user', key: 'nav_me', match: ['me', 'capsule', 'admin'] },
-];
+const ROUTE_TITLE = {
+  explore: 'nav_explore', people: 'nav_explore', p: 'nav_explore', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book',
+  chat: 'nav_messages', play: 'play_title', me: 'nav_profile', help: 'help_title', capsule: 'capsule', admin: 'admin_title',
+  today: 'today_title', memories: 'nav_memories', settings: 'nav_settings',
+};
+const MEMORY_ROUTES = ['memories', 'gallery', 'wall', 'book', 'capsule', 'today', 'play', 'help'];
+
+/** Which main tab a route belongs to. */
+function tabFor(section, arg, meId) {
+  if (!section || section === 'home') return 'home';
+  if (section === 'explore' || section === 'people') return 'explore';
+  if (section === 'p') return Number(arg) === meId ? 'me' : 'explore';
+  if (section === 'chat') return 'chat';
+  if (['me', 'settings', 'admin'].includes(section)) return 'me';
+  if (MEMORY_ROUTES.includes(section)) return 'memories';
+  return null;
+}
+
+function NavItem({ to, icon, label, active, badge, children }) {
+  return (
+    <a className="nav-item" href={href(to)} aria-current={active ? 'page' : undefined}>
+      <span className="nav-ico">
+        {children || <Icon name={icon} size={24} />}
+        {badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
+      </span>
+      <span className="nav-label">{label}</span>
+    </a>
+  );
+}
 
 function Shell() {
   const [section, arg] = useRoute();
-  const { t, lang, setLang, theme, toggleTheme, state, refresh, toasts, cloud, me, unread, installPending, pushPending, openSheet } = useApp();
+  const { t, state, refresh, toasts, cloud, me, meId, unread, installPending, pushPending, openSheet } = useApp();
   useEffect(() => {
-    document.documentElement.style.setProperty('--banner', cloud ? '0px' : '56px');
+    document.documentElement.style.setProperty('--banner', cloud ? '0px' : '34px');
   }, [cloud]);
   useEffect(() => {
-    const key = { people: 'nav_people', p: 'nav_people', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book', chat: 'nav_chat', play: 'play_title', me: 'nav_me', help: 'help_title', capsule: 'capsule', admin: 'admin_title', today: 'today_title' }[section];
-    document.title = `${key ? t(key) + ' · ' : ''}Class 2J · Memoris`;
+    const key = ROUTE_TITLE[section];
+    document.title = `${key ? t(key) + ' · ' : ''}Memoris · 2J`;
   }, [section, t]);
   const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
+  const tab = tabFor(section, arg, meId);
+  const inThread = section === 'chat' && Boolean(arg);
 
   let view;
   if (state.status === 'loading') {
@@ -57,11 +81,14 @@ function Shell() {
         <button className="btn" onClick={refresh}>{t('retry')}</button>
       </div>
     );
-  } else if (section === 'people') view = <People filter={arg} />;
+  } else if (section === 'explore') view = <Explore tab={arg} />;
+  else if (section === 'people') view = <Explore tab="people" country={arg} />;
   else if (section === 'p') view = <Profile id={arg} />;
   else if (section === 'gallery') view = <Gallery />;
   else if (section === 'wall') view = <Wall />;
-  else if (section === 'me') view = <Me />;
+  else if (section === 'me') view = <Me mode={arg} />;
+  else if (section === 'settings') view = <Settings />;
+  else if (section === 'memories') view = <Memories />;
   else if (section === 'chat') view = <Chat room={arg} />;
   else if (section === 'play') view = <Play tab={arg} />;
   else if (section === 'book') view = <Book />;
@@ -72,8 +99,16 @@ function Shell() {
   else if (section && section !== 'home') view = <NotFound />;
   else view = <Home />;
 
+  const create = (
+    <button type="button" className="nav-item nav-create" onClick={() => openSheet('create')} aria-label={t('nav_create')}>
+      <span className="nav-ico"><Icon name="plus" size={26} /></span>
+      <span className="nav-label">{t('nav_create')}</span>
+    </button>
+  );
+  const meAvatar = me ? <Avatar p={me} className="nav-avatar" /> : null;
+
   return (
-    <>
+    <div className={`app ${inThread ? 'in-thread' : ''}`}>
       <a
         className="skip"
         href={href()}
@@ -86,76 +121,61 @@ function Shell() {
       </a>
       {!cloud && <div className="demo-banner">{t('demo_banner')}</div>}
 
-      <header className="topbar">
-        <a className="brand" href={href()}>
+      {/* Phone: slim top bar. Desktop: it is replaced by the side bar. */}
+      <header className="app-top">
+        <a className="wordmark" href={href()} aria-label="Memoris">
           <span className="brand-mark" aria-hidden="true">2J</span>
-          <span className="brand-name">Memoris</span>
+          <span className="wordmark-text">Memoris</span>
         </a>
-        <nav className="navlinks" aria-label="Main">
-          {NAV.map((n) => (
-            <a key={n.to} href={href(n.to)} aria-current={n.match.includes(section) ? 'page' : undefined}>
-              {t(n.key)}
-              {n.badge && unreadTotal > 0 && <span className="badge">{unreadTotal}</span>}
-            </a>
-          ))}
-        </nav>
-        <div className="tools">
-          <div className="langs" role="group" aria-label="Language">
-            {['en', 'ru', 'ja'].map((l) => (
-              <button key={l} className={lang === l ? 'on' : ''} aria-pressed={lang === l} onClick={() => setLang(l)}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <button className="icon-btn" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'}>
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
-          </button>
+        <div className="app-top-tools">
           {me && (pushPending || installPending) && (
             <button
               className="icon-btn app-chip"
               onClick={() => openSheet(pushPending ? 'push' : 'install')}
               aria-label={t(pushPending ? 'sheet_push_title' : 'sheet_install_title')}
             >
-              <Icon name={pushPending ? 'bell' : 'download'} size={20} />
+              <Icon name={pushPending ? 'bell' : 'download'} size={22} />
               <span className="pulse" aria-hidden="true" />
             </button>
           )}
-          {me && (
-            <a className="me-chip" href={href('me')} aria-label={me.name}>
-              <Avatar p={me} className="mini" />
-            </a>
-          )}
+          <a className="icon-btn" href={href('memories')} aria-label={t('nav_memories')} aria-current={tab === 'memories' ? 'page' : undefined}>
+            <Icon name="memories" size={23} />
+          </a>
         </div>
       </header>
 
-      <main id="main" tabIndex={-1} className="wrap">
+      <nav className="app-side" aria-label={t('nav_main')}>
+        <a className="wordmark" href={href()} aria-label="Memoris">
+          <span className="brand-mark" aria-hidden="true">2J</span>
+          <span className="wordmark-text">Memoris</span>
+        </a>
+        <NavItem to="" icon="home" label={t('nav_home')} active={tab === 'home'} />
+        <NavItem to="explore" icon="search" label={t('nav_explore')} active={tab === 'explore'} />
+        {create}
+        <NavItem to="chat" icon="chat" label={t('nav_messages')} active={tab === 'chat'} badge={unreadTotal} />
+        <NavItem to="memories" icon="memories" label={t('nav_memories')} active={tab === 'memories'} />
+        <NavItem to="me" label={t('nav_profile')} active={tab === 'me'}>{meAvatar}</NavItem>
+        <div className="side-foot">
+          <NavItem to="settings" icon="settings" label={t('nav_settings')} active={section === 'settings'} />
+          {installPending && (
+            <button type="button" className="nav-item" onClick={() => openSheet('install')}>
+              <span className="nav-ico"><Icon name="download" size={24} /></span>
+              <span className="nav-label">{t('install_app')}</span>
+            </button>
+          )}
+        </div>
+      </nav>
+
+      <main id="main" tabIndex={-1} className="app-main">
         {view}
       </main>
 
-      <footer className="site-foot">
-        <p>
-          <b>{CLASS.name}</b> · {CLASS.school} · {lang === 'ja' ? CLASS.cityJa : CLASS.city}
-        </p>
-        <p>
-          <a href={href('help')}>{t('help_title')}</a> · <a href={href('book')}>{t('tab_book')}</a> · <a href={href('play')}>{t('nav_play')}</a>
-        </p>
-        {installPending && (
-          <p>
-            <button type="button" className="btn btn-small" onClick={() => openSheet('install')}>
-              <Icon name="download" size={16} /> {t('install_app')}
-            </button>
-          </p>
-        )}
-      </footer>
-
-      <nav className="tabbar" aria-label="Main">
-        {NAV.map((n) => (
-          <a key={n.to} href={href(n.to)} aria-current={n.match.includes(section) ? 'page' : undefined}>
-            <Icon name={n.icon} />
-            {n.badge && unreadTotal > 0 && <span className="badge dot">{unreadTotal}</span>}
-            <span>{t(n.key)}</span>
-          </a>
-        ))}
+      <nav className="app-nav" aria-label={t('nav_main')}>
+        <NavItem to="" icon="home" label={t('nav_home')} active={tab === 'home'} />
+        <NavItem to="explore" icon="search" label={t('nav_explore')} active={tab === 'explore'} />
+        {create}
+        <NavItem to="chat" icon="chat" label={t('nav_messages')} active={tab === 'chat'} badge={unreadTotal} />
+        <NavItem to="me" label={t('nav_profile')} active={tab === 'me'}>{meAvatar}</NavItem>
       </nav>
 
       <Lightbox />
@@ -165,7 +185,7 @@ function Shell() {
           <div key={x.id} className={`toast ${x.kind}`}>{x.text}</div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 

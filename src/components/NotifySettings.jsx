@@ -5,7 +5,7 @@ import { Icon } from './Icons';
 const KEYS = ['dm', 'class', 'notes', 'news', 'daily'];
 
 /** Notification switches in the cabinet. */
-export function NotifySettings() {
+export function NotifySettings({ bare = false }) {
   const { t, cloud, pushInfo, pushSupportedNow, enableNotifications, disableNotifications, setPushPref, toast, installPending, openSheet } = useApp();
   const on = pushInfo.permission === 'granted' && pushInfo.subscribed;
   const blocked = pushInfo.permission === 'denied';
@@ -25,8 +25,8 @@ export function NotifySettings() {
   };
 
   return (
-    <fieldset className="notify">
-      <legend><Icon name="bell" size={18} /> {t('notif_title')}</legend>
+    <fieldset className={`notify ${bare ? 'bare' : ''}`}>
+      <legend className={bare ? 'visually-hidden' : ''}><Icon name="bell" size={18} /> {t('notif_title')}</legend>
       <p className="muted">{status}</p>
       {pushSupportedNow && !blocked && (
         <button type="button" className={`btn btn-small ${on ? 'btn-ghost' : ''}`} onClick={on ? disableNotifications : turnOn}>
@@ -45,7 +45,7 @@ export function NotifySettings() {
           ))}
         </ul>
       )}
-      {installPending && (
+      {installPending && !bare && (
         <button type="button" className="btn btn-small btn-ghost" onClick={() => openSheet('install')}>
           <Icon name="download" size={16} /> {t('install_app')}
         </button>

@@ -473,3 +473,5 @@ import { V7 } from './i18n-v7.js';
 for (const l of Object.keys(V7)) Object.assign(DICT[l], V7[l]);
 import { V8 } from './i18n-v8.js';
 for (const l of Object.keys(V8)) Object.assign(DICT[l], V8[l]);
+import { V9 } from './i18n-v9.js';
+for (const l of Object.keys(V9)) Object.assign(DICT[l], V9[l]);

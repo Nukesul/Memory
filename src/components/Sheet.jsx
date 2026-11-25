@@ -12,7 +12,7 @@ const SECTIONS = ['dream', 'memory', 'quote', 'jpWord', 'message', 'wish', 'cont
  * One yearbook page. `data` is what the person wrote (or their draft).
  * With `examples`, empty fields show a clearly marked example instead of nothing.
  */
-export function Sheet({ p, data, examples = false, onPhoto }) {
+export function Sheet({ p, data, examples = false, onPhoto, bare = false }) {
   const { t, lang, country } = useApp();
   const sample = sampleFor(p.id, lang);
 
@@ -33,7 +33,8 @@ export function Sheet({ p, data, examples = false, onPhoto }) {
   };
 
   return (
-    <article className="sheet">
+    <article className={`sheet ${bare ? 'bare' : ''}`}>
+      {!bare && (
       <header className="sheet-head">
         <div className="portrait">
           <span className="tape" aria-hidden="true" />
@@ -58,6 +59,7 @@ export function Sheet({ p, data, examples = false, onPhoto }) {
           )}
         </div>
       </header>
+      )}
 
       {facts.length > 0 && (
         <ul className="facts" aria-label={t('sec_fun')}>
@@ -98,7 +100,7 @@ export function Sheet({ p, data, examples = false, onPhoto }) {
         })}
       </div>
 
-      {(photos.length > 0 || examples) && (
+      {!bare && (photos.length > 0 || examples) && (
         <section className="sheet-photos">
           <h2>{t('photos')}</h2>
           <div className="photo-strip">
