@@ -1,12 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/onest';
-import '@fontsource-variable/unbounded';
+import '@fontsource-variable/nunito';
 import '@fontsource-variable/caveat';
 import './styles.css';
 import './styles/ds.css';
 import './styles/messenger.css';
 import './styles/feed.css';
+import './styles/cute.css';
 import App from './App.jsx';
 import { trackViewport } from './viewport';
 

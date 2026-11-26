@@ -4,41 +4,49 @@
    Big soft corners, 1px lines, almost no shadows.
    ═══════════════════════════════════════════════════════════════════ */
 :root {
-  /* Moss & ink: mist-green paper, ink-green text, one spruce accent. */
-  --bg: #eef1ed;
-  --surface: #fbfcfa;
-  --surface-2: #e4e9e4;
-  --surface-3: #d8dfd9;
-  --line: #d9e0da;
-  --line-strong: #bcc7bf;
-  --text: #17211c;
-  --muted: #5a6961;
-  --ink: #17211c;
-  --accent: #2d6a57;
-  --accent-hover: #245646;
+  /* Warm milk paper, cocoa ink, matcha accent, soft pastels for the little things. */
+  --bg: #faf5ef;
+  --surface: #fffdfa;
+  --surface-2: #f4ece3;
+  --surface-3: #eaded1;
+  --line: #eee4d9;
+  --line-strong: #d8c8b7;
+  --text: #2c2420;
+  --muted: #7a6a60;
+  --ink: #2c2420;
+  --accent: #2e8265;
+  --accent-hover: #256b53;
   --accent-ink: #ffffff;
-  --accent-soft: #d9eae2;
-  --heart: #e0475b;
-  --ok: #2a8a5f;
+  --accent-soft: #dcf0e5;
+  --heart: #f0617a;
+  --ok: #2e8f66;
   --warn: #a8740a;
-  --danger: #c93a30;
-  --danger-soft: #fbe9e6;
+  --danger: #cf3f35;
+  --danger-soft: #fdebe8;
   --ring: var(--accent);
-  --focus: #2d6a57;
+  --focus: #2e8265;
 
-  /* the older pages (Memories, capsule, book) paint with these names: same family, calmer tones */
-  --sakura: #e6cfc9;
-  --sun: #e8d8a4;
-  --sky: #b9d2d9;
-  --mint: #bcdacb;
-  --coral: #d4826f;
-  --grape: #a9a6c6;
-  --hanko: #b8433a;
-  --sky-top: #cfe0da;
-  --sky-bot: #e8ebe0;
-  --fuji: #8ea79f;
-  --hill1: #9fc7b4;
-  --hill2: #7fb399;
+  /* pastel stickers: tape, tags, highlights */
+  --peach: #ffdcc9;
+  --butter: #fff0b9;
+  --sky-soft: #d4e8f6;
+  --lilac: #e3d9f6;
+  --pink: #fddbe3;
+  --mint-soft: #d5f0e2;
+
+  /* the older pages (Memories, capsule, book) paint with these names */
+  --sakura: #f6d9d4;
+  --sun: #f5e3a8;
+  --sky: #c3dbe6;
+  --mint: #c5e3d3;
+  --coral: #e0866f;
+  --grape: #b9b3d8;
+  --hanko: #c0463c;
+  --sky-top: #d8e8e2;
+  --sky-bot: #f3eee0;
+  --fuji: #9cb4ab;
+  --hill1: #a8d0bb;
+  --hill2: #88bd9f;
 
   /* legacy names used by older components */
   --board: var(--surface);
@@ -49,58 +57,64 @@
   --mark: var(--accent-soft);
   --grid: transparent;
   --pop: none;
-  --yellow: #e8d8a4;
+  --yellow: #f5e3a8;
 
-  --font: 'Onest Variable', system-ui, -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif;
+  --font: 'Nunito Variable', 'Hiragino Maru Gothic ProN', system-ui, -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif;
   --display: var(--font);
-  --brand: 'Unbounded Variable', var(--font);
+  --brand: 'Nunito Variable', var(--font);
 
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 28px;
-  --e1: 0 1px 2px rgb(23 33 28 / 0.06);
-  --e2: 0 12px 32px -8px rgb(23 33 28 / 0.25);
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+  --e1: 0 1px 2px rgb(110 70 40 / 0.08);
+  --e2: 0 14px 34px -10px rgb(110 70 40 / 0.35);
   --t-fast: 150ms;
   --t-med: 220ms;
 
   --top-h: 56px;
-  --nav-h: 62px;
+  --nav-h: 64px;
   --side-w: 248px;
 }
 [data-theme='dark'] {
-  --bg: #0e1411;
-  --surface: #151d19;
-  --surface-2: #1d2823;
-  --surface-3: #27342d;
-  --line: #26322c;
-  --line-strong: #3a4a41;
-  --text: #e8efea;
-  --muted: #9aaba1;
-  --ink: #e8efea;
-  --accent: #7fd1ae;
-  --accent-hover: #98dcbe;
-  --accent-ink: #0a130f;
-  --accent-soft: #1b3329;
-  --heart: #ff7088;
-  --ok: #4cc58d;
+  --bg: #1a1613;
+  --surface: #241f1b;
+  --surface-2: #2e2722;
+  --surface-3: #3b322b;
+  --line: #352c26;
+  --line-strong: #4d4036;
+  --text: #f4ece5;
+  --muted: #b5a69b;
+  --ink: #f4ece5;
+  --accent: #8ddbb8;
+  --accent-hover: #a5e5c9;
+  --accent-ink: #12201a;
+  --accent-soft: #223a30;
+  --heart: #ff8399;
+  --ok: #55c895;
   --warn: #e0a92a;
-  --danger: #ff6b5c;
-  --danger-soft: #3a1d22;
-  --focus: #98dcbe;
-  --sakura: #4a3834;
-  --sun: #4c4426;
-  --sky: #2a4147;
-  --mint: #25443a;
+  --danger: #ff7062;
+  --danger-soft: #3d1f22;
+  --focus: #a5e5c9;
+  --peach: #4a3226;
+  --butter: #4a4125;
+  --sky-soft: #243a47;
+  --lilac: #36304d;
+  --pink: #4a2a35;
+  --mint-soft: #234035;
+  --sakura: #4d3a35;
+  --sun: #4f4526;
+  --sky: #2b4249;
+  --mint: #274638;
   --coral: #b5634f;
-  --grape: #3a3858;
+  --grape: #3d3a5c;
   --hanko: #ff7a6b;
-  --sky-top: #16281f;
-  --sky-bot: #24382e;
-  --fuji: #3f5c52;
+  --sky-top: #1b2a22;
+  --sky-bot: #2a3a2f;
+  --fuji: #435d53;
   --hill1: #2f6b55;
   --hill2: #255645;
-  --yellow: #4c4426;
+  --yellow: #4f4526;
   --e1: none;
   --e2: 0 16px 40px -8px rgb(0 0 0 / 0.6);
 }

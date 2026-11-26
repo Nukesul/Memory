@@ -10,6 +10,10 @@ import { FeedList } from '../feed/Feed';
 import { rel } from '../time';
 
 const DAY = 864e5;
+const greetKey = () => {
+  const h = new Date().getHours();
+  return h < 11 ? 'home_hi_morning' : h < 18 ? 'home_hi_day' : 'home_hi_evening';
+};
 const ONLINE_MS = 150000;
 
 /** Home: classmates, announcements, a birthday if one is close, then the feed of posts (newest first). */
@@ -32,6 +36,8 @@ export default function Home() {
 
   return (
     <div className="home">
+      {me && <p className="greet">{t(greetKey())}, {firstName(me.name)}!</p>}
+
       <section className="classmates" aria-label={t('home_classmates')}>
         <ul className="classmates-row">
           {me && (
