@@ -9,3 +9,4 @@ create policy "media insert" on public.post_media for insert to authenticated wi
   and (orig_url is null or orig_url like 'https://pifzkxxnpxughaeezzuu.supabase.co/storage/v1/object/public/photos/' || (select public.my_person()) || '/p/%')
   and position('..' in full_url || feed_url || thumb_url || coalesce(orig_url, '')) = 0
 );
+revoke execute on function public.comments_before_insert() from authenticated;
