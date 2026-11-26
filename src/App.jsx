@@ -18,6 +18,8 @@ import Admin from './views/Admin';
 import Explore from './views/Explore';
 import Memories from './views/Memories';
 import Settings from './views/Settings';
+import PostPage from './feed/PostPage';
+import Create from './feed/Create';
 import { SheetHost } from './components/Sheets';
 import NotFound from './views/NotFound';
 import { InviteFlow, SignIn, Splash } from './views/Auth';
@@ -25,13 +27,13 @@ import { InviteFlow, SignIn, Splash } from './views/Auth';
 const ROUTE_TITLE = {
   explore: 'nav_explore', people: 'nav_explore', p: 'nav_explore', gallery: 'nav_gallery', wall: 'wall_title', book: 'tab_book',
   chat: 'nav_messages', awards: 'mem_awards', me: 'nav_profile', help: 'help_title', capsule: 'capsule', admin: 'admin_title',
-  memories: 'nav_memories', settings: 'nav_settings',
+  memories: 'nav_memories', settings: 'nav_settings', post: 'post_title', create: 'create_post_title',
 };
 const MEMORY_ROUTES = ['memories', 'gallery', 'wall', 'book', 'capsule', 'awards', 'today', 'play', 'help'];
 
 /** Which main tab a route belongs to. */
 function tabFor(section, arg, meId) {
-  if (!section || section === 'home') return 'home';
+  if (!section || section === 'home' || section === 'post' || section === 'create') return 'home';
   if (section === 'explore' || section === 'people') return 'explore';
   if (section === 'p') return Number(arg) === meId ? 'me' : 'explore';
   if (section === 'chat') return 'chat';
@@ -88,6 +90,8 @@ function Shell() {
   else if (section === 'settings') view = <Settings />;
   else if (section === 'memories') view = <Memories />;
   else if (section === 'chat') view = <Messages />;
+  else if (section === 'post') view = <PostPage key={arg} id={arg} />;
+  else if (section === 'create') view = <Create />;
   else if (section === 'awards' || (section === 'play' && arg === 'awards')) view = <Awards />;
   else if (section === 'play' || section === 'today') view = <Memories />;
   else if (section === 'book') view = <Book />;

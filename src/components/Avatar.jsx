@@ -11,6 +11,7 @@ const initials = (name) =>
 
 /** Portrait (4:5). Falls back to initials on a country-coloured background. */
 export function Avatar({ p, full = false, className = '' }) {
+  if (!p) return <span className={`avatar ${className}`} aria-hidden="true" />;
   const src = p.avatar ? asset(full ? p.avatar.full : p.avatar.thumb) : null;
   return (
     <span className={`avatar ${className}`} style={{ '--hue': COUNTRY_HUE[p.country] }}>

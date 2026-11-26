@@ -119,3 +119,59 @@ export async function processImage(file) {
     if (bmp.close) bmp.close();
   }
 }
+
+// ───────── Posts ─────────
+// Every post photo is stored in three sizes, so each screen downloads only what it shows:
+//  - full:  2048 px, opened in full screen (≈ 500 KB)
+//  - feed:  1080 px, shown in the feed (≈ 170 KB)
+//  - thumb:  480 px, grids and previews (≈ 45 KB)
+// "Keep the original" adds the photo at its full resolution (capped by what phones can draw,
+// about 16 megapixels) at high quality. It is re-encoded, which also strips camera data such as
+// the location where the photo was taken.
+const POST_SIZES = [
+  { key: 'full', side: 2048, budget: 500 * 1024, q: { qMax: 0.9, qMin: 0.7 } },
+  { key: 'feed', side: 1080, budget: 170 * 1024, q: { qMax: 0.86, qMin: 0.64 } },
+  { key: 'thumb', side: 480, budget: 45 * 1024, q: { qMax: 0.82, qMin: 0.6 } },
+];
+const ORIG_MAX_PIXELS = 16e6;
+const ORIG_BUDGET = 9.5 * 1024 * 1024;
+
+export async function processPostImage(file, { original = false } = {}) {
+  if (!file.type.startsWith('image/') && !/\.(heic|heif)$/i.test(file.name || '')) throw new Error('not-image');
+  const bmp = await toBitmap(file);
+  try {
+    const [sw, sh] = sizeOf(bmp);
+    const out = {};
+    let w = 0;
+    let h = 0;
+    for (const s of POST_SIZES) {
+      const canvas = scaled(bmp, s.side);
+      let blob = await fit(canvas, s.budget, s.q);
+      // Very detailed photos: fewer pixels instead of a blurry low quality.
+      let side = s.side;
+      let c = canvas;
+      while (blob.size > s.budget * 1.5 && side > s.side * 0.6) {
+        side = Math.round(side * 0.85);
+        c = scaled(bmp, side);
+        blob = await fit(c, s.budget, s.q);
+      }
+      out[s.key] = blob;
+      if (s.key === 'full') {
+        w = c.width;
+        h = c.height;
+      }
+    }
+    if (original) {
+      const k = Math.min(1, Math.sqrt(ORIG_MAX_PIXELS / (sw * sh)));
+      const side = Math.round(Math.max(sw, sh) * k);
+      if (side > 2048) {
+        const canvas = scaled(bmp, side);
+        const blob = await fit(canvas, ORIG_BUDGET, { qMax: 0.92, qMin: 0.8 });
+        if (blob && blob.size <= ORIG_BUDGET) out.orig = blob;
+      }
+    }
+    return { ...out, w, h };
+  } finally {
+    if (bmp.close) bmp.close();
+  }
+}

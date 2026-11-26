@@ -231,12 +231,12 @@ export function setDraft(id, text) {
  * Shows the message at once, then uploads and stores it. A failed message stays in the list with
  * "Retry"; the client id guarantees a retry can never store it twice.
  */
-export async function send(id, { text = '', files = [], voice = null, replyTo = null }) {
+export async function send(id, { text = '', files = [], voice = null, replyTo = null, post = null }) {
   const client_id = uuid();
-  const kind = voice ? 'voice' : files.length ? 'photo' : 'text';
+  const kind = post ? 'post' : voice ? 'voice' : files.length ? 'photo' : 'text';
   const item = {
     client_id, conversation_id: id, from_id: state.me, text: text.trim().slice(0, 2000), kind, reply_to: replyTo,
-    created_at: new Date().toISOString(), status: 'sending', files, voice,
+    created_at: new Date().toISOString(), status: 'sending', files, voice, attachments: post ? [post] : undefined,
     preview: files.map((f) => URL.createObjectURL(f)),
   };
   set((s) => ({ outbox: [...s.outbox, item] }));

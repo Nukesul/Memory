@@ -17,7 +17,7 @@ export function SheetHost() {
 function CreateSheet({ onClose }) {
   const { t } = useApp();
   const items = [
-    { to: 'me/edit/photos', icon: 'photo', title: t('create_photo'), note: t('create_photo_sub') },
+    { to: 'create', icon: 'photo', title: t('create_post_title'), note: t('create_post_sub') },
     { to: 'wall', icon: 'note', title: t('create_note'), note: t('create_note_sub') },
     { to: 'capsule', icon: 'capsule', title: t('create_capsule'), note: t('create_capsule_sub') },
     { to: 'explore', icon: 'pen', title: t('mem_autographs'), note: t('mem_autographs_note') },

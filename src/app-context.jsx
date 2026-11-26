@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, auth, clearLocalData, CLOUD, ls } from './store';
 import * as messenger from './messenger/store';
+import * as feed from './feed/store';
 import { currentSubscription, disablePush, enablePush, getPrefs, isIOS, isStandalone, pushPermission, pushSupported, savePrefs, syncPush } from './push';
 import { DICT } from './i18n';
 import { COUNTRIES } from './config';
@@ -150,6 +151,7 @@ export function AppProvider({ children }) {
     }
     await auth.signOut();
     messenger.stop();
+    feed.stop();
     clearLocalData();
     setState({ profiles: {}, notes: [], votes: [], announcements: [], status: 'loading' });
   };
@@ -276,8 +278,13 @@ export function AppProvider({ children }) {
   }, [meId, refreshPresence]);
   // The messenger keeps its own state (conversations, drafts, unsent messages) for the signed-in person.
   useEffect(() => {
-    if (meId) messenger.start(meId);
-    else messenger.stop();
+    if (meId) {
+      messenger.start(meId);
+      feed.start(meId);
+    } else {
+      messenger.stop();
+      feed.stop();
+    }
   }, [meId]);
   const unreadTotal = messenger.useMessenger((st) => st.inbox.reduce((n, r) => n + (r.muted ? 0 : r.unread), 0));
 

@@ -1,18 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../app-context';
-import { sampleFor } from '../samples';
-import { asset } from '../people';
 import { href } from '../router';
 import { Icon } from '../components/Icons';
 import { Avatar } from '../components/Avatar';
 import { firstName } from '../roster';
+import { EmptyState } from '../components/ui';
+import { FeedList } from '../feed/Feed';
+import { rel } from '../time';
 
 const DAY = 864e5;
 const ONLINE_MS = 150000;
 
-/** Home: what is new in the class, in one short column. Everything else lives in Memories. */
+/** Home: classmates, announcements, a birthday if one is close, then the feed of posts (newest first). */
 export default function Home() {
-  const { t, people, me, presence, openPhotos } = useApp();
+  const { t, people, me, presence } = useApp();
 
   // Classmates row: online people first, then whoever updated their page most recently.
   const row = useMemo(() => {
@@ -22,12 +23,6 @@ export default function Home() {
       .map((p) => ({ p, on: on(p) }))
       .sort((a, b) => Number(b.on) - Number(a.on) || new Date(b.p.updatedAt || 0) - new Date(a.p.updatedAt || 0));
   }, [people, presence, me]);
-
-  // Newest photos first: pages updated most recently, last photo first.
-  const photos = useMemo(() => {
-    const byRecent = [...people].filter((p) => p.photos.length).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-    return byRecent.flatMap((p) => [...p.photos].reverse().map((ph) => ({ ...ph, personId: p.id, who: firstName(p.name) }))).slice(0, 9);
-  }, [people]);
 
   return (
     <div className="home">
@@ -57,26 +52,18 @@ export default function Home() {
 
       <Announcements />
 
-      <section className="home-sec" aria-labelledby="new-photos">
-        <div className="sec-head">
-          <h2 id="new-photos">{t('home_photos')}</h2>
-          <a className="sec-link" href={href('explore/photos')}>{t('see_all')}</a>
-        </div>
-        {photos.length ? (
-          <div className="photo-grid three">
-            {photos.map((it, i) => (
-              <button key={it.full + i} type="button" className="shot" onClick={() => openPhotos(photos, i)} aria-label={`${t('open_photo')} — ${it.who}`}>
-                <img src={asset(it.thumb)} alt={it.cap || ''} loading="lazy" decoding="async" />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">{t('gallery_empty')}</p>
-        )}
-      </section>
-
-      <News />
       <Birthdays soon />
+
+      <a className="feed-compose" href={href('create')}>
+        <Avatar p={me} className="mini round" />
+        <span>{t('feed_compose')}</span>
+        <Icon name="photo" size={22} />
+      </a>
+
+      <FeedList
+        listKey="home"
+        empty={<EmptyState icon="photo" title={t('feed_empty')} text={t('feed_empty_note')} action={<a className="btn" href={href('create')}>{t('create_post_title')}</a>} />}
+      />
     </div>
   );
 }
@@ -114,17 +101,7 @@ export function Birthdays({ soon = false }) {
   );
 }
 
-export const rel = (lang, iso) => {
-  const diff = (new Date(iso).getTime() - Date.now()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
-  const steps = [[60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.3, 'week'], [12, 'month'], [Infinity, 'year']];
-  let v = diff;
-  for (const [k, unit] of steps) {
-    if (Math.abs(v) < k) return rtf.format(Math.round(v), unit);
-    v /= k;
-  }
-  return '';
-};
+export { rel };
 
 export function Announcements() {
   const { t, lang, state } = useApp();

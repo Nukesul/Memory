@@ -3,6 +3,7 @@ import { useApp } from '../app-context';
 import { firstName } from '../roster';
 import { Avatar } from '../components/Avatar';
 import { Icon } from '../components/Icons';
+import { asset } from '../people';
 import { ChatImage, VoicePlayer, clock, linkify, previewText, systemText, useFileUrl } from './parts';
 
 const LONG_MS = 420;
@@ -20,6 +21,21 @@ function Images({ m, local, onOpen }) {
         </span>
       ))}
     </span>
+  );
+}
+
+/** A post shared into the chat: a small card that opens the post. */
+function PostShare({ att }) {
+  const { t, people } = useApp();
+  const author = people.find((p) => p.id === att.author_id);
+  return (
+    <a className="post-share" href={`#/post/${att.post_id}`} onClick={(e) => e.stopPropagation()}>
+      {att.thumb ? <img src={asset(att.thumb)} alt="" loading="lazy" decoding="async" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} /> : <span className="ps-blank"><Icon name="photo" size={22} /></span>}
+      <span className="ps-text">
+        <b>{author ? firstName(author.name) : t('post_title')}</b>
+        <span>{att.caption || t('post_open')}</span>
+      </span>
+    </a>
   );
 }
 
@@ -87,6 +103,7 @@ function Bubble({ item, mine, showName, showAvatar, grouped, quoted, readState, 
 
   const rx = Object.entries(item.reactions || {}).filter(([, ids]) => ids.length);
   const audio = (item.attachments || []).find((a) => a.type === 'audio');
+  const shared = (item.attachments || []).find((a) => a.type === 'post');
   const forwardedFrom = item.forwarded_from ? true : false;
 
   return (
@@ -117,6 +134,7 @@ function Bubble({ item, mine, showName, showAvatar, grouped, quoted, readState, 
               {forwardedFrom && <span className="fwd-label"><Icon name="forward" size={13} /> {t('msg_forwarded')}</span>}
               {item.reply_to && <Quote quoted={quoted} onJump={onJump} />}
               <Images m={item} local={pending && item.preview?.length ? item.preview : null} onOpen={onOpenImages} />
+              {shared && <PostShare att={shared} />}
               {audio && <VoicePlayer att={audio} />}
               {pending && item.voice && !audio && <VoicePlayer att={{ dur: item.voice.dur }} localUrl={item.voice.url} />}
               {item.text && <span className="bubble-text">{linkify(item.text)}</span>}

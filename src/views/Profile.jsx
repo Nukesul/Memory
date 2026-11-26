@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../app-context';
 import { byId } from '../roster';
 import { href } from '../router';
-import { asset, completion } from '../people';
+import { completion } from '../people';
 import { Sheet } from '../components/Sheet';
 import { NoteCard, NoteComposer } from '../components/Notes';
 import { Icon } from '../components/Icons';
@@ -10,13 +10,19 @@ import { Avatar } from '../components/Avatar';
 import { Flag } from '../components/Flag';
 import { Autographs } from '../components/Autographs';
 import { EmptyState, Segmented } from '../components/ui';
+import { PostGrid } from '../feed/Feed';
+import { loadCount, useFeed } from '../feed/store';
 
 const ONLINE_MS = 150000;
 
 export default function Profile({ id }) {
   const { t, people, state, me, openPhotos, toast, country, presence } = useApp();
-  const [tab, setTab] = useState('photos');
+  const [tab, setTab] = useState('posts');
   const base = byId(id);
+  const postCount = useFeed((s) => (base ? s.counts[base.id] : null));
+  useEffect(() => {
+    if (base) loadCount(base.id);
+  }, [base?.id]); // eslint-disable-line
   if (!base) {
     return (
       <section className="page narrow">
@@ -27,7 +33,6 @@ export default function Profile({ id }) {
   const p = people.find((x) => x.id === base.id);
   const notes = state.notes.filter((n) => n.to_id === p.id);
   const isMe = me?.id === p.id;
-  const photoItems = p.photos.map((ph) => ({ ...ph, personId: p.id }));
   const prog = completion({ ...p.data, avatar: p.avatar, photos: p.photos });
   const online = !isMe && presence[p.id] && Date.now() - new Date(presence[p.id]).getTime() < ONLINE_MS;
   const bio = (p.data.quote || p.data.hello || '').trim();
@@ -69,7 +74,7 @@ export default function Profile({ id }) {
       {bio && <p className="prof-bio">{bio}</p>}
 
       <ul className="prof-stats">
-        <li><b>{p.photos.length}</b><span>{t('stat_photos')}</span></li>
+        <li><b>{postCount ?? '–'}</b><span>{t('stat_posts')}</span></li>
         <li><b>{notes.length}</b><span>{t('stat_notes')}</span></li>
         <li><b>{Math.round((prog.done / prog.total) * 100)}%</b><span>{t('prof_filled')}</span></li>
       </ul>
@@ -101,28 +106,28 @@ export default function Profile({ id }) {
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'photos', label: t('prof_tab_photos'), icon: 'grid' },
+          { value: 'posts', label: t('prof_tab_posts'), icon: 'grid' },
+          ...(isMe ? [{ value: 'saved', label: t('prof_tab_saved'), icon: 'bookmark' }] : []),
           { value: 'about', label: t('prof_tab_about'), icon: 'user' },
           { value: 'notes', label: t('prof_tab_notes'), icon: 'note' },
         ]}
       />
 
-      {tab === 'photos' &&
-        (p.photos.length ? (
-          <div className="photo-grid three">
-            {p.photos.map((ph, i) => (
-              <button key={ph.full + i} type="button" className="shot" onClick={() => openPhotos(photoItems, i)} aria-label={t('open_photo')}>
-                <img src={asset(ph.thumb)} alt={ph.cap || ''} loading="lazy" decoding="async" />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon="photo"
-            title={isMe ? t('prof_no_photos_me') : t('prof_no_photos', { name: p.name.split(' ')[0] })}
-            action={isMe ? <a className="btn" href={href('me/edit/photos')}>{t('create_photo')}</a> : null}
-          />
-        ))}
+      {tab === 'posts' && (
+        <PostGrid
+          key={p.id}
+          listKey={`a${p.id}`}
+          empty={
+            <EmptyState
+              icon="photo"
+              title={isMe ? t('prof_no_posts_me') : t('prof_no_posts', { name: p.name.split(' ')[0] })}
+              action={isMe ? <a className="btn" href={href('create')}>{t('create_post_title')}</a> : null}
+            />
+          }
+        />
+      )}
+
+      {tab === 'saved' && isMe && <PostGrid listKey="saved" empty={<EmptyState icon="bookmark" title={t('saved_empty')} text={t('saved_empty_note')} />} />}
 
       {tab === 'about' && <Sheet p={p} data={{ ...p.data, avatar: p.avatar, photos: p.photos }} examples={!p.filled} bare />}
 

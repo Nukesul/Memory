@@ -37,7 +37,7 @@ export function Lightbox() {
   const it = box.items[i];
   const owner = it.personId ? person(it.personId) : null;
   const download = async () => {
-    const url = asset(it.full);
+    const url = asset(it.orig || it.full);
     try {
       const res = await fetch(url);
       const blob = await res.blob();
@@ -95,7 +95,7 @@ export function Lightbox() {
             {i + 1} / {n}
           </span>
           <button type="button" className="lb-dl" onClick={download}>
-            <Icon name="download" size={16} /> {t('download')}
+            <Icon name="download" size={16} /> {t(it.orig ? 'download_orig' : 'download')}
           </button>
         </figcaption>
       </figure>

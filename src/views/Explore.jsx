@@ -4,12 +4,16 @@ import { go } from '../router';
 import { Icon } from '../components/Icons';
 import { Segmented } from '../components/ui';
 import People from './People';
-import Gallery from './Gallery';
+import { PostGrid } from '../feed/Feed';
+import { EmptyState } from '../components/ui';
 
 /** Find classmates and browse every photo. One search box for both. */
 export default function Explore({ tab, country }) {
-  const { t } = useApp();
+  const { t, person } = useApp();
   const [q, setQ] = useState('');
+  const qq = q.trim().toLowerCase();
+  // Search looks at the author's name and the caption of the posts loaded so far.
+  const match = (p) => p.media.length > 0 && (!qq || (person(p.author_id)?.name || '').toLowerCase().includes(qq) || p.caption.toLowerCase().includes(qq));
   const view = tab === 'photos' ? 'photos' : 'people';
   return (
     <section className="page explore">
@@ -32,7 +36,11 @@ export default function Explore({ tab, country }) {
           { value: 'photos', label: t('explore_photos'), icon: 'grid' },
         ]}
       />
-      {view === 'people' ? <People embedded query={q} filter={country} /> : <Gallery embedded query={q} />}
+      {view === 'people' ? (
+        <People embedded query={q} filter={country} />
+      ) : (
+        <PostGrid listKey="home" filter={match} empty={<EmptyState icon="photo" title={qq ? t('search_nothing') : t('feed_empty')} />} />
+      )}
     </section>
   );
 }

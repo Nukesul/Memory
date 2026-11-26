@@ -74,6 +74,7 @@ export function previewText(m, t) {
   if (m.deleted || m.deleted_at) return t('msg_deleted');
   if (m.kind === 'photo') return `📷 ${m.text || t('msg_photo')}`;
   if (m.kind === 'voice') return `🎤 ${t('msg_voice')}`;
+  if (m.kind === 'post') return `🖼 ${m.text || t('msg_post')}`;
   if (m.kind === 'system') return t('msg_system_short');
   return m.text;
 }
