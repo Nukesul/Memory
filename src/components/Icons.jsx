@@ -1,4 +1,18 @@
 const P = {
+  tiles: (
+    <>
+      <rect x="3.5" y="3.5" width="7" height="10" rx="2" />
+      <rect x="13.5" y="3.5" width="7" height="6" rx="2" />
+      <rect x="3.5" y="16.5" width="7" height="4" rx="1.5" />
+      <rect x="13.5" y="12.5" width="7" height="8" rx="2" />
+    </>
+  ),
+  rows: (
+    <>
+      <rect x="4" y="3.5" width="16" height="7" rx="2" />
+      <rect x="4" y="13.5" width="16" height="7" rx="2" />
+    </>
+  ),
   heart: <path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.6 3.9 4 7.4 4c2 0 3.5 1.1 4.6 2.7C13.1 5.1 14.6 4 16.6 4c3.5 0 5.8 3.6 4.6 7.1-1.7 4.8-9.2 9.4-9.2 9.4z" />,
   comment: <path d="M20.5 11.5a8.5 8.5 0 01-12.4 7.6L3.5 20.5l1.4-4.4A8.5 8.5 0 1120.5 11.5z" />,
   bookmark: <path d="M6 3.5h12v17l-6-4.5-6 4.5z" />,

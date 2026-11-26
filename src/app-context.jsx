@@ -41,7 +41,7 @@ export function AppProvider({ children }) {
     const next = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     ls.set('memoris:theme', next);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#07061a' : '#1c1a3a');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0e1411' : '#eef1ed');
     setThemeState(next);
   };
   useEffect(() => {

@@ -1,29 +1,44 @@
 /* ═══════════════════════════════════════════════════════════════════
    Memoris design system (phase 2). Loaded after styles.css and wins over it.
-   Calm neutrals, one indigo accent, pink for hearts, a sun→pink→grape ring
-   as the Memoris signature. 1px lines, almost no shadows.
+   Moss & ink: calm green-tinted neutrals, one spruce accent, a coral heart. No gradients.
+   Big soft corners, 1px lines, almost no shadows.
    ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --bg: #f6f6fa;
-  --surface: #ffffff;
-  --surface-2: #efeff6;
-  --surface-3: #e6e6f0;
-  --line: #e3e3ee;
-  --line-strong: #cfcfe0;
-  --text: #16152b;
-  --muted: #66658a;
-  --ink: #16152b;
-  --accent: #4b3fd9;
-  --accent-hover: #3f33c4;
+  /* Moss & ink: mist-green paper, ink-green text, one spruce accent. */
+  --bg: #eef1ed;
+  --surface: #fbfcfa;
+  --surface-2: #e4e9e4;
+  --surface-3: #d8dfd9;
+  --line: #d9e0da;
+  --line-strong: #bcc7bf;
+  --text: #17211c;
+  --muted: #5a6961;
+  --ink: #17211c;
+  --accent: #2d6a57;
+  --accent-hover: #245646;
   --accent-ink: #ffffff;
-  --accent-soft: #ecebff;
-  --heart: #ff4d7e;
-  --ok: #1f9d6b;
-  --warn: #b97f00;
-  --danger: #d93b31;
-  --danger-soft: #fdecea;
-  --ring: conic-gradient(from 200deg, #ffc531, #ff4d7e, #8a6bff, #ffc531);
-  --focus: #4b3fd9;
+  --accent-soft: #d9eae2;
+  --heart: #e0475b;
+  --ok: #2a8a5f;
+  --warn: #a8740a;
+  --danger: #c93a30;
+  --danger-soft: #fbe9e6;
+  --ring: var(--accent);
+  --focus: #2d6a57;
+
+  /* the older pages (Memories, capsule, book) paint with these names: same family, calmer tones */
+  --sakura: #e6cfc9;
+  --sun: #e8d8a4;
+  --sky: #b9d2d9;
+  --mint: #bcdacb;
+  --coral: #d4826f;
+  --grape: #a9a6c6;
+  --hanko: #b8433a;
+  --sky-top: #cfe0da;
+  --sky-bot: #e8ebe0;
+  --fuji: #8ea79f;
+  --hill1: #9fc7b4;
+  --hill2: #7fb399;
 
   /* legacy names used by older components */
   --board: var(--surface);
@@ -34,18 +49,18 @@
   --mark: var(--accent-soft);
   --grid: transparent;
   --pop: none;
-  --yellow: #ffc531;
+  --yellow: #e8d8a4;
 
   --font: 'Onest Variable', system-ui, -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif;
   --display: var(--font);
   --brand: 'Unbounded Variable', var(--font);
 
   --r-sm: 10px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 24px;
-  --e1: 0 1px 2px rgb(22 21 43 / 0.06);
-  --e2: 0 12px 32px -8px rgb(22 21 43 / 0.22);
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --e1: 0 1px 2px rgb(23 33 28 / 0.06);
+  --e2: 0 12px 32px -8px rgb(23 33 28 / 0.25);
   --t-fast: 150ms;
   --t-med: 220ms;
 
@@ -54,25 +69,38 @@
   --side-w: 248px;
 }
 [data-theme='dark'] {
-  --bg: #0f0e1a;
-  --surface: #17162a;
-  --surface-2: #201f36;
-  --surface-3: #2a2944;
-  --line: #2c2b45;
-  --line-strong: #3d3b5e;
-  --text: #f1f0fa;
-  --muted: #a3a2bf;
-  --ink: #f1f0fa;
-  --accent: #8f85ff;
-  --accent-hover: #a39bff;
-  --accent-ink: #0f0e1a;
-  --accent-soft: #26244a;
-  --heart: #ff6b93;
-  --ok: #3cc28c;
+  --bg: #0e1411;
+  --surface: #151d19;
+  --surface-2: #1d2823;
+  --surface-3: #27342d;
+  --line: #26322c;
+  --line-strong: #3a4a41;
+  --text: #e8efea;
+  --muted: #9aaba1;
+  --ink: #e8efea;
+  --accent: #7fd1ae;
+  --accent-hover: #98dcbe;
+  --accent-ink: #0a130f;
+  --accent-soft: #1b3329;
+  --heart: #ff7088;
+  --ok: #4cc58d;
   --warn: #e0a92a;
   --danger: #ff6b5c;
   --danger-soft: #3a1d22;
-  --focus: #a39bff;
+  --focus: #98dcbe;
+  --sakura: #4a3834;
+  --sun: #4c4426;
+  --sky: #2a4147;
+  --mint: #25443a;
+  --coral: #b5634f;
+  --grape: #3a3858;
+  --hanko: #ff7a6b;
+  --sky-top: #16281f;
+  --sky-bot: #24382e;
+  --fuji: #3f5c52;
+  --hill1: #2f6b55;
+  --hill2: #255645;
+  --yellow: #4c4426;
   --e1: none;
   --e2: 0 16px 40px -8px rgb(0 0 0 / 0.6);
 }
@@ -106,7 +134,7 @@ body {
 .wordmark-text { font: 700 1.15rem/1 var(--brand); letter-spacing: -0.03em; }
 .brand-mark {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 0; box-shadow: none; transform: none;
-  background: var(--ring); color: #fff; font: 700 0.72rem/1 var(--brand); letter-spacing: -0.04em;
+  background: var(--accent); color: var(--accent-ink); font: 700 0.72rem/1 var(--brand); letter-spacing: -0.04em;
 }
 .brand-mark.big { width: 72px; height: 72px; font-size: 1.5rem; }
 .icon-btn {
@@ -318,7 +346,7 @@ body {
 .classmates-row::-webkit-scrollbar { display: none; }
 .cm { display: grid; justify-items: center; gap: 6px; width: 68px; color: var(--text); text-decoration: none; scroll-snap-align: start; }
 .cm-ring { position: relative; display: block; width: 64px; height: 64px; padding: 3px; border-radius: 50%; background: var(--line-strong); }
-.cm-ring.filled { background: var(--ring); }
+.cm-ring.filled { background: var(--accent); }
 .cm-ring.self { background: var(--surface-3); }
 .cm-ring .avatar { width: 100%; height: 100%; border: 3px solid var(--bg); }
 .cm-ring .presence { right: 2px; bottom: 2px; width: 15px; height: 15px; border: 3px solid var(--bg); }
@@ -382,7 +410,7 @@ body {
 
 /* ───────── Profile ───────── */
 .prof-head { display: flex; align-items: center; gap: 18px; margin: 8px 0 12px; }
-.prof-avatar { position: relative; flex: none; width: 96px; height: 96px; padding: 3px; border: 0; border-radius: 50%; background: var(--ring); cursor: zoom-in; }
+.prof-avatar { position: relative; flex: none; width: 96px; height: 96px; padding: 3px; border: 0; border-radius: 50%; background: var(--accent); cursor: zoom-in; }
 .prof-avatar:disabled { cursor: default; background: var(--line-strong); }
 .prof-avatar .avatar { width: 100%; height: 100%; border: 3px solid var(--bg); }
 .prof-id { min-width: 0; display: grid; gap: 3px; }
@@ -409,7 +437,7 @@ body {
 
 /* ───────── Memories ───────── */
 .mem-hero { position: relative; margin: 4px 0 18px; padding: 22px 20px; border-radius: var(--r-xl); background: var(--text); color: var(--bg); overflow: hidden; }
-.mem-hero::after { content: ''; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%; background: var(--ring); opacity: 0.85; filter: blur(2px); }
+.mem-hero::after { content: ''; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%; background: var(--accent); opacity: 0.22; pointer-events: none; }
 .mem-school { position: relative; z-index: 1; font-size: 0.82rem; font-weight: 600; opacity: 0.75; }
 .mem-title { position: relative; z-index: 1; margin: 6px 0 4px; font: 700 clamp(1.8rem, 8vw, 2.6rem)/1.05 var(--brand); letter-spacing: -0.04em; }
 .mem-sub { position: relative; z-index: 1; opacity: 0.8; font-size: 0.92rem; }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ls } from '../store';
 import { useApp } from '../app-context';
 import { href } from '../router';
 import { Icon } from '../components/Icons';
@@ -14,6 +15,11 @@ const ONLINE_MS = 150000;
 /** Home: classmates, announcements, a birthday if one is close, then the feed of posts (newest first). */
 export default function Home() {
   const { t, people, me, presence } = useApp();
+  const [view, setViewState] = useState(() => (ls.get('memoris:feedview', 'tiles') === 'list' ? 'list' : 'tiles'));
+  const setView = (v) => {
+    setViewState(v);
+    ls.set('memoris:feedview', v);
+  };
 
   // Classmates row: online people first, then whoever updated their page most recently.
   const row = useMemo(() => {
@@ -60,7 +66,13 @@ export default function Home() {
         <Icon name="photo" size={22} />
       </a>
 
+      <div className="view-switch" role="group" aria-label={t('feed_view')}>
+        <button type="button" className={view === 'tiles' ? 'on' : ''} aria-pressed={view === 'tiles'} onClick={() => setView('tiles')}><Icon name="tiles" size={18} /> {t('feed_view_tiles')}</button>
+        <button type="button" className={view === 'list' ? 'on' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}><Icon name="rows" size={18} /> {t('feed_view_list')}</button>
+      </div>
+
       <FeedList
+        view={view}
         listKey="home"
         empty={<EmptyState icon="photo" title={t('feed_empty')} text={t('feed_empty_note')} action={<a className="btn" href={href('create')}>{t('create_post_title')}</a>} />}
       />

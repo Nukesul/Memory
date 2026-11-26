@@ -11,13 +11,13 @@ import { LikersSheet, PostMenu, ShareSheet } from './Sheets';
 
 const TAP_MS = 260;
 const ratioOf = (m) => (m?.w && m?.h ? m.w / m.h : 1);
-const clampRatio = (r) => Math.min(1.91, Math.max(0.8, r));
+const clampRatio = (r, tall) => Math.min(1.91, Math.max(tall ? 0.6 : 0.8, r));
 
 /** Photos of a post, swiped sideways. Double tap likes, a single tap opens full screen. */
-export function Carousel({ post, eager, onLike }) {
+export function Carousel({ post, eager, onLike, tall }) {
   const { openPhotos, person } = useApp();
   const media = post.media;
-  const box = clampRatio(ratioOf(media[0]));
+  const box = clampRatio(ratioOf(media[0]), tall);
   const track = useRef(null);
   const tap = useRef({ t: 0, timer: null });
   const [i, setI] = useState(0);
@@ -157,7 +157,7 @@ function PostCard({ id, full = false, eager = false, onComment }) {
         </button>
       </header>
 
-      {post.media.length > 0 && <Carousel post={post} eager={eager} onLike={like} />}
+      {post.media.length > 0 && <Carousel post={post} eager={eager} onLike={like} tall={full} />}
       {!post.media.length && <Caption post={post} full />}
 
       <div className="pc-actions">

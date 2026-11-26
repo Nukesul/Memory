@@ -12,6 +12,7 @@
 .feed-compose:hover { border-color: var(--line-strong); }
 
 .feed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; position: relative; }
+.feed.v-list { max-width: 640px; margin-inline: auto; width: 100%; }
 .feed-pending {
   position: sticky; top: calc(var(--top-h) + var(--banner, 0px) + 10px); z-index: 5; justify-self: center;
   display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; margin-bottom: -54px;
@@ -26,14 +27,11 @@
 
 /* ───────── One post ───────── */
 .post-card {
-  background: var(--surface); border-block: 1px solid var(--line);
-  margin-inline: -16px; content-visibility: auto; contain-intrinsic-size: auto 640px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); overflow: hidden;
+  content-visibility: auto; contain-intrinsic-size: auto 640px;
 }
 .post-card.full { content-visibility: visible; }
-@media (min-width: 600px) {
-  .post-card { margin-inline: 0; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
-}
-.pc-head { display: flex; align-items: center; gap: 10px; padding: 10px 6px 10px 14px; }
+.pc-head { display: flex; align-items: center; gap: 10px; padding: 12px 8px 10px 14px; }
 .pc-av { flex: none; line-height: 0; }
 .pc-av .avatar { width: 36px; height: 36px; }
 .pc-names { flex: 1; min-width: 0; display: grid; line-height: 1.25; }
@@ -51,7 +49,7 @@
 @keyframes feed-pop { 30% { transform: scale(1.3); } 60% { transform: scale(0.92); } }
 
 /* Photos: swipe sideways, snap to each photo */
-.pc-media { position: relative; aspect-ratio: var(--ratio, 1); background: var(--surface-2); overflow: hidden; }
+.pc-media { position: relative; aspect-ratio: var(--ratio, 1); background: var(--surface-2); overflow: hidden; margin: 0 10px; border-radius: var(--r-lg); width: auto; }
 .pc-track {
   display: flex; height: 100%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
@@ -226,3 +224,61 @@
   .pc-burst, .pc-icon.like.pop .icon, .spinner, .skeleton *, .pg-tile.sk { animation: none; }
   .pc-burst { opacity: 0; }
 }
+
+
+/* ───────── Tiles: the Pinterest-style wall ───────── */
+.home { max-width: 1100px; }
+@media (min-width: 1024px) {
+  .home > :not(.feed) { max-width: 640px; width: 100%; justify-self: center; }
+  .home > .view-switch { justify-self: end; max-width: none; width: auto; }
+}
+.view-switch { display: inline-flex; justify-self: end; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); margin-top: -8px; }
+.view-switch button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px;
+  background: none; color: var(--muted); font: 600 0.85rem var(--font);
+}
+.view-switch button.on { background: var(--surface); color: var(--text); box-shadow: var(--e1); }
+
+.wall { display: flex; gap: 10px; align-items: flex-start; }
+.wall-col { flex: 1 1 0; min-width: 0; display: grid; gap: 10px; align-content: start; }
+.pin { position: relative; display: grid; gap: 0; min-width: 0; content-visibility: auto; contain-intrinsic-size: auto 260px; }
+.pin-link { display: grid; gap: 7px; color: var(--text); text-decoration: none; }
+.pin-media { position: relative; display: block; overflow: hidden; border-radius: var(--r-lg); background: var(--surface-3); }
+.pin-media img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s, transform 0.4s; }
+.pin-media img.in { opacity: 1; }
+@media (hover: hover) { .pin-link:hover .pin-media img { transform: scale(1.03); } }
+.pin-multi {
+  position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+  border-radius: 999px; background: rgb(14 20 17 / 0.62); color: #fff; font: 650 0.74rem var(--font);
+}
+.pin-caption {
+  padding: 0 4px; font-size: 0.88rem; line-height: 1.35; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pin-note {
+  display: block; padding: 16px 16px 18px; border-radius: var(--r-lg); font-size: 1rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap;
+  background: hsl(var(--hue) 28% 88%); color: hsl(var(--hue) 40% 16%);
+  display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden;
+}
+[data-theme='dark'] .pin-note { background: hsl(var(--hue) 20% 19%); color: hsl(var(--hue) 30% 90%); }
+.pin-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 2px 0 0 2px; min-height: 36px; }
+.pin-who { display: inline-flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 600; }
+.pin-who .avatar.mini.round { width: 26px; height: 26px; aspect-ratio: 1; }
+.pin-who span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pin-like { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; min-width: 36px; padding: 0 8px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 600 0.8rem var(--font); }
+.pin-like:hover { background: var(--surface-2); }
+.pin-like.on { color: var(--heart); }
+.pin-save {
+  position: absolute; top: 8px; right: 8px; display: none; place-items: center; width: 36px; height: 36px; padding: 0;
+  border: 0; border-radius: 50%; background: rgb(251 252 250 / 0.92); color: var(--text); box-shadow: var(--e1);
+}
+.pin-save.on { background: var(--accent); color: var(--accent-ink); }
+@media (hover: hover) and (pointer: fine) {
+  .pin:hover .pin-save, .pin:focus-within .pin-save { display: grid; }
+}
+.pin-save.on { display: grid; }
+.wall.skeleton { margin-top: 10px; }
+.sk-pin { display: block; border-radius: var(--r-lg); background: var(--surface-2); animation: feed-shimmer 1.4s ease-in-out infinite; }
+
+/* Profile: the head and the stats get the same soft treatment */
+.prof-stats li b { font-variant-numeric: tabular-nums; }

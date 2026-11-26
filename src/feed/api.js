@@ -6,6 +6,7 @@ import { CLOUD, ls, photoPath, supabase as sb } from '../store';
 import { ROSTER } from '../roster';
 import { buildPerson } from '../people';
 import { processPostImage } from '../image';
+import { SEED_SIZES } from './seed-sizes';
 
 export const PAGE = 10;
 const BUCKET = 'photos';
@@ -169,7 +170,7 @@ function dread() {
       .forEach((p, i) => {
         const id = ++s.seq;
         s.posts.push({ id, author_id: p.id, caption: '', created_at: new Date(start + i * 3.6e6 * 7).toISOString(), edited_at: null, legacy: true });
-        p.photos.slice(0, 10).forEach((ph, idx) => s.media.push({ post_id: id, idx, full: ph.full, feed: ph.full, thumb: ph.thumb, orig: null, w: 1200, h: 1500, own: false }));
+        p.photos.slice(0, 10).forEach((ph, idx) => s.media.push({ post_id: id, idx, full: ph.full, feed: ph.full, thumb: ph.thumb, orig: null, w: SEED_SIZES[ph.full]?.[0] || 1200, h: SEED_SIZES[ph.full]?.[1] || 1500, own: false }));
       });
     ls.set(DKEY, s);
   }

@@ -1,6 +1,7 @@
 // Feed of posts (stage D).
 export const V11 = {
   en: {
+    feed_view: 'Feed layout', feed_view_tiles: 'Tiles', feed_view_list: 'List',
     feed_compose: 'Share a photo or a thought…', feed_empty: 'No posts yet', feed_empty_note: 'Be the first: share a photo from school or from today.',
     feed_new: 'New posts ({n})', feed_end: 'You have seen every post',
     post_title: 'Post', post_more: 'more', post_err: 'That didn’t work. Check the connection and try again.', post_edited: 'edited',
@@ -35,6 +36,7 @@ export const V11 = {
     msg_post: 'Post', download_orig: 'Download original',
   },
   ru: {
+    feed_view: 'Вид ленты', feed_view_tiles: 'Плитка', feed_view_list: 'Лента',
     feed_compose: 'Поделитесь фото или мыслью…', feed_empty: 'Пока нет публикаций', feed_empty_note: 'Будьте первым: выложите фото со школы или с сегодняшнего дня.',
     feed_new: 'Новые публикации ({n})', feed_end: 'Вы посмотрели все публикации',
     post_title: 'Публикация', post_more: 'ещё', post_err: 'Не получилось. Проверьте интернет и попробуйте ещё раз.', post_edited: 'изменено',
@@ -69,6 +71,7 @@ export const V11 = {
     msg_post: 'Публикация', download_orig: 'Скачать оригинал',
   },
   ja: {
+    feed_view: '表示切り替え', feed_view_tiles: 'タイル', feed_view_list: 'リスト',
     feed_compose: '写真やひとことをシェア…', feed_empty: 'まだ投稿がありません', feed_empty_note: '最初の投稿をどうぞ。学校の写真や今日の一枚を。',
     feed_new: '新しい投稿（{n}）', feed_end: 'すべての投稿を見ました',
     post_title: '投稿', post_more: '続きを読む', post_err: 'うまくいきませんでした。接続を確認してもう一度お試しください。', post_edited: '編集済み',

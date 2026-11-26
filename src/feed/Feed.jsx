@@ -1,10 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../app-context';
-import { asset } from '../people';
-import { href } from '../router';
 import { Icon } from '../components/Icons';
 import { EmptyState } from '../components/ui';
 import PostCard from './PostCard';
+import { Masonry } from './Tiles';
 import { listOf, loadList, showPending, useFeed } from './store';
 
 /** Calls `onHit` when the element scrolls into view (loads the next page a screen before the end). */
@@ -31,6 +30,19 @@ function Skeleton() {
   );
 }
 
+function TileSkeleton() {
+  const h = [1.25, 0.9, 1.5, 1.1, 0.8, 1.35];
+  return (
+    <div className="wall skeleton" aria-hidden="true" style={{ '--cols': 2 }}>
+      {[0, 1].map((c) => (
+        <div key={c} className="wall-col">
+          {h.filter((_, i) => i % 2 === c).map((r, i) => <span key={i} className="sk-pin" style={{ aspectRatio: 1 / r }} />)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ListState({ l, onRetry, empty }) {
   const { t } = useApp();
   if (l.error && !l.ids.length) {
@@ -47,17 +59,18 @@ function ListState({ l, onRetry, empty }) {
 }
 
 /** The feed: newest first, ten at a time, the next page loads as you scroll. */
-export function FeedList({ listKey = 'home', empty }) {
+export function FeedList({ listKey = 'home', empty, view = 'tiles' }) {
   const { t } = useApp();
   const l = useFeed((s) => listOf(s, listKey));
   const pending = useFeed((s) => (listKey === 'home' ? s.pending.length : 0));
+  const posts = useFeed((s) => s.posts);
   useEffect(() => {
     if (!l.loaded && !l.loading) loadList(listKey);
   }, [listKey]); // eslint-disable-line
   const more = useSentinel(() => !l.loading && !l.done && !l.error && loadList(listKey), l.loaded && !l.done);
 
   return (
-    <div className="feed">
+    <div className={`feed v-${view}`}>
       {pending > 0 && (
         <button
           type="button"
@@ -70,13 +83,13 @@ export function FeedList({ listKey = 'home', empty }) {
           <Icon name="arrow" size={16} /> {t('feed_new', { n: pending })}
         </button>
       )}
-      {l.ids.map((id, i) => <PostCard key={id} id={id} eager={i < 2} />)}
-      {!l.loaded && l.loading && (
+      {view === 'tiles' ? <Masonry ids={l.ids} posts={posts} /> : l.ids.map((id, i) => <PostCard key={id} id={id} eager={i < 2} />)}
+      {!l.loaded && l.loading && (view === 'tiles' ? <TileSkeleton /> : (
         <>
           <Skeleton />
           <Skeleton />
         </>
-      )}
+      ))}
       <ListState l={l} onRetry={() => loadList(listKey)} empty={empty} />
       {l.loaded && !l.done && (
         <div ref={more} className="feed-more">
@@ -92,8 +105,8 @@ export function FeedList({ listKey = 'home', empty }) {
   );
 }
 
-/** Posts as a grid of small squares (profile, saved, explore). */
-export function PostGrid({ listKey, filter, empty }) {
+/** A person's posts, saved posts or search results, as a masonry wall. */
+export function PostGrid({ listKey, filter, empty, showAuthor = true }) {
   const { t } = useApp();
   const l = useFeed((s) => listOf(s, listKey));
   const posts = useFeed((s) => s.posts);
@@ -101,25 +114,14 @@ export function PostGrid({ listKey, filter, empty }) {
     if (!l.loaded && !l.loading) loadList(listKey);
   }, [listKey]); // eslint-disable-line
   const more = useSentinel(() => !l.loading && !l.done && !l.error && loadList(listKey), l.loaded && !l.done);
-  const items = l.ids.map((id) => posts[id]).filter(Boolean).filter((p) => !filter || filter(p));
+  const ids = useMemo(() => (filter ? l.ids.filter((id) => posts[id] && filter(posts[id])) : l.ids), [l.ids, posts, filter]);
 
   return (
     <>
-      <div className="post-grid">
-        {items.map((p) => (
-          <a key={p.id} className={`pg-tile ${p.media.length ? '' : 'text'}`} href={href(`post/${p.id}`)} aria-label={p.caption.slice(0, 80) || t('post_title')}>
-            {p.media.length ? (
-              <img src={asset(p.media[0].thumb)} alt="" loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.add('in')} />
-            ) : (
-              <span className="pg-text">{p.caption}</span>
-            )}
-            {p.media.length > 1 && <span className="pg-multi"><Icon name="layers" size={16} /></span>}
-          </a>
-        ))}
-        {!l.loaded && l.loading && Array.from({ length: 9 }, (_, i) => <span key={i} className="pg-tile sk" aria-hidden="true" />)}
-      </div>
+      <Masonry ids={ids} posts={posts} showAuthor={showAuthor} />
+      {!l.loaded && l.loading && <TileSkeleton />}
       <ListState l={l} onRetry={() => loadList(listKey)} empty={empty} />
-      {l.loaded && l.ids.length > 0 && !items.length && l.done && empty}
+      {l.loaded && l.ids.length > 0 && !ids.length && l.done && empty}
       {l.loaded && !l.done && (
         <div ref={more} className="feed-more">
           {l.error ? <button type="button" className="btn btn-ghost" onClick={() => loadList(listKey)}>{t('retry')}</button> : <span className="spinner" aria-label={t('loading')} />}

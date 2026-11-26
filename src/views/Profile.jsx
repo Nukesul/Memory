@@ -117,6 +117,7 @@ export default function Profile({ id }) {
         <PostGrid
           key={p.id}
           listKey={`a${p.id}`}
+          showAuthor={false}
           empty={
             <EmptyState
               icon="photo"
